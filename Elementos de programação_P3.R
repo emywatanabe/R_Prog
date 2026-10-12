@@ -53,3 +53,19 @@ which(dif < 1e-6)[1]
 
 tail(r,1)
 
+#Exercício 3 – Sequência Multiplicativa
+x <- numeric(10)
+
+x[1] <- 2
+x[2] <- 3
+
+for (i in 3:10){
+  x[i] <- (x[i-1]*x[i-2])
+}
+
+y <- log(x)
+r <- y[-1]/y[-length(y)]
+
+tail(r,1)
+
+
