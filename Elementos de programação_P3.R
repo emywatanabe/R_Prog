@@ -67,3 +67,5 @@ y <- log(x)
 r <- y[-1]/y[-length(y)]
 
 tail(r,1)
+
+#Exercicio 4 - Média dos Dois Anteriores
