@@ -3,3 +3,54 @@
 #Tutorial: Programação em R
 
 #Exercício 1 – Sequência de Fibonacci Generalizada
+
+#Considere a sequência definida por
+#x1=2,x2=3
+#e para n≥3,
+#xn=xn−1+xn−2
+#Com sua implementação em R responda:
+#Qual é o valor de x20?
+
+#Seja rn=xnxn−1
+#Qual o menor valor de n para que
+#|rn−rn−1|<10−7
+#Para qual valor rn está convergindo? Reporte pelo menos 6 casas decimais.
+
+x <- numeric(20)
+
+x[1] <- 2
+x[2] <- 3
+
+for (i in 3:20){
+  x[i] <- x[i-1] + x[i-2]
+  }
+x[20]
+
+r <- x[-1]/x[-length(x)]
+
+dif <- abs(diff(r))
+
+which(dif < 1e-7)[1]
+dif[16]
+
+tail(r,1)
+
+x <- numeric(20)
+
+x[1] <- 2
+x[2] <- 3
+
+for (i in 3:20){
+  x[i] <- x[i-1] + x[i-2]
+}
+x[20]
+
+r <- x[-1]/x[-length(x)]
+
+dif <- abs(diff(r))
+
+which(dif < 1e-7)[1]
+dif[16]
+
+tail(r,1)
+
