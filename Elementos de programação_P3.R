@@ -68,4 +68,4 @@ r <- y[-1]/y[-length(y)]
 
 tail(r,1)
 
-#Exercício 4 – Média dos Dois Anteriores
+
