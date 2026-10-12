@@ -141,3 +141,10 @@ x <-0
 while (x <5)
 {x <- x + 2 }
 x
+
+B <- matrix(c(1,4,13,
+              3,5,2,
+              6,12,5), nrow = 3, ncol = 3)
+C <- (t(B) %*% solve(t(B) %*% B) %*% B)
+C
+det(C)
