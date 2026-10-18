@@ -348,3 +348,7 @@ ggplot(dados_bubble_embalagem, aes(x = Volume_Litros, y = Faturamento_Reais, siz
     plot.subtitle = element_text(size = 12),
     legend.position = "right"
   )
+
+#==================
+#ÚLTIMO GRAFICO
+#==================
