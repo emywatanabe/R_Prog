@@ -326,11 +326,11 @@ ggplot(dados_bubble_embalagem, aes(x = Volume_Litros, y = Faturamento_Reais, siz
   geom_point(alpha = 0.75) +
   
   # Controla o tamanho das bolhas
-  scale_size_area(max_size = 12, guide = "none") +
+  scale_size_area(max_size = 10, guide = "none") +
   
   labs(
-    title = "Bubble Plot: Volume vs. Faturamento por Tipo de Embalagem",
-    subtitle = "Comparação entre os recipientes de uso (Garrafão, Plástica, Vidro, Copo e Outros)",
+    title = "Volume vs. Faturamento por Tipo de Embalagem",
+    subtitle = "Ao longo dos anos (2010 - 2025)",
     x = "Volume Total Produzido (Litros)",
     y = "Faturamento Total (R$)",
     color = "Embalagem"
@@ -352,3 +352,57 @@ ggplot(dados_bubble_embalagem, aes(x = Volume_Litros, y = Faturamento_Reais, siz
 #==================
 #ÚLTIMO GRAFICO
 #==================
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+# ==========================================
+# 1. PREPARAÇÃO DOS DADOS (Volume Total por UF)
+# ==========================================
+dados_rose <- dados_agua %>%
+  mutate(
+    total_litros = as.numeric(gsub(",", ".", `Quantidade (litros) Garrafão`)) + 
+      as.numeric(gsub(",", ".", `Quantidade (litros) Garrafa Plástica`)) +
+      as.numeric(gsub(",", ".", `Quantidade (litros) Garrafa de Vidro`)) +
+      as.numeric(gsub(",", ".", `Quantidade (litros) Copo`)) +
+      as.numeric(gsub(",", ".", `Quantidade (litros) Outras Embalagens`))
+  ) %>%
+  group_by(UF) %>%
+  summarise(Volume_Total = sum(total_litros, na.rm = TRUE), .groups = 'drop') %>%
+  filter(!is.na(Volume_Total) & Volume_Total > 0) %>%
+  slice_max(order_by = Volume_Total, n = 10)
+
+# ==========================================
+# 2. DEFINIÇÃO DA PALETA DE AZUIS
+# ==========================================
+paleta_azuis <- c(
+  "#DEEBF7", "#C6DBEF", "#9ECAE1", "#6BAED6", "#4292C6", 
+  "#2171B5", "#08519C", "#08306B", "#05204A", "#03102E"
+)
+
+# ==========================================
+# 3. PLOTAR O NIGHTINGALE ROSE CHART COM A PALETA em azul
+# ==========================================
+ggplot(dados_rose, aes(x = reorder(UF, Volume_Total), y = Volume_Total, fill = UF)) +
+  geom_bar(stat = "identity", width = 1, color = "white", linewidth = 0.5) +
+  coord_polar(start = 0) +
+  # Aplicação da paleta de cores personalizada em tons de azul
+  scale_fill_manual(values = paleta_azuis) +
+  labs(
+    title = "Produção de Água Mineral por UF",
+    subtitle = "Volume total em litros (Top 10 Estados)",
+    x = NULL,
+    y = NULL,
+    fill = "UF"
+  ) +
+  theme_minimal(base_size = 13) +
+  scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  theme(
+    axis.text.x = element_text(face = "bold", size = 14, color = "black"),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.title = element_text(face = "bold", size = 15, hjust = 0.5),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "none"
+  )
