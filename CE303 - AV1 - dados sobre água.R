@@ -22,11 +22,11 @@ dados_serie <- dados_agua %>%
       UF %in% c('PR', 'RS', 'SC') ~ 'Sul',
       ),
     
-    total_litros = as.numeric(gsub(",", ".", `Quantidade (litros) Garrafão`)) + 
+    total_litros = (as.numeric(gsub(",", ".", `Quantidade (litros) Garrafão`)) + 
       as.numeric(gsub(",", ".", `Quantidade (litros) Garrafa Plástica`)) +
       as.numeric(gsub(",", ".", `Quantidade (litros) Garrafa de Vidro`)) +
       as.numeric(gsub(",", ".", `Quantidade (litros) Copo`)) +
-      as.numeric(gsub(",", ".", `Quantidade (litros) Outras Embalagens`))
+      as.numeric(gsub(",", ".", `Quantidade (litros) Outras Embalagens`)))
   ) %>%
   group_by(`Ano base`, regiao) %>%
   summarise(total_produzido = sum(total_litros, na.rm = TRUE), .groups = 'drop')
@@ -44,6 +44,7 @@ dados_grafico <- dados_serie %>%
 dados_totais <- dados_grafico %>%
   summarise(total_geral = max(total_acumulado, na.rm = TRUE), .groups = 'drop')
 
+
 # ==========================================
 # 2. GRÁFICO 1 - BARRAS EMPILHADAS
 # ==========================================
@@ -60,28 +61,34 @@ ggplot(dados_serie, aes(x = as.factor(`Ano base`), y = total_produzido, fill = r
     fontface = "bold"
   ) +
   labs(
-    title = "Volume de Produção de Água Mineral por Região",
-    subtitle = "Comparação anual e acumulada",
+    #title = "Produção de Água Mineral por Região (2010-2025)",
+    #subtitle = "Comparação anual e acumulada",
     x = "Ano Base",
     y = "Quantidade Total (Litros)",
     fill = "Região"
   ) +
   theme_classic() +
   scale_fill_manual(values = c(
-    "Centro-Oeste" = "#cfd8dc", 
-    "Nordeste"     = "#90a4ae", 
-    "Norte"        = "#607d8b", 
-    "Sudeste"      = "#455a64", 
-    "Sul"          = "#263238"
+    "Centro-Oeste" = "#C6DBEF", 
+    "Nordeste"     = "#6BAED6", 
+    "Norte"        = "#2171B5", 
+    "Sudeste"      = "#08306B", 
+    "Sul"          = "#03102E"
   )) +
-  scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1)) +
+  scale_y_continuous(
+      expand = expansion(mult = c(0, 0.12)),
+      labels = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1)) +
   theme(
     axis.title = element_text(size = 14, face = "bold"),
     axis.text = element_text(size = 14, color = "black"),
     axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
     axis.text.y = element_text(size = 12),
     plot.title = element_text(face = "bold", size = 14),
-    plot.subtitle = element_text(size = 12)
+    legend.title = element_text(size = 12),
+    legend.position = c(0.12, 0.72),
+    legend.background = element_rect(fill = alpha("white", 0.6)),
+    legend.text = element_text(size = 12)
+    #plot.subtitle = element_text(size = 12)
   )
 
 
@@ -140,19 +147,19 @@ ggplot(dados_faturamento_regiao, aes(x = as.factor(`Ano base`), y = faturamento_
   ) +
   
   labs(
-    title = "Faturamento Total de Água Mineral por Região",
-    subtitle = "Comparação anual e acumulada (R$)",
+    #title = "Faturamento Total de Água Mineral por Região (2010-2025)",
+    #subtitle = "Comparação anual e acumulada (R$)",
     x = "Ano Base",
     y = "Faturamento Total (R$)",
     fill = "Região"
   ) +
   theme_classic() +
   scale_fill_manual(values = c(
-    "Centro-Oeste" = "#cfd8dc", 
-    "Nordeste"     = "#90a4ae", 
-    "Norte"        = "#607d8b", 
-    "Sudeste"      = "#455a64", 
-    "Sul"          = "#263238"
+    "Centro-Oeste" = "#C6DBEF", 
+    "Nordeste"     = "#6BAED6", 
+    "Norte"        = "#2171B5", 
+    "Sudeste"      = "#08306B", 
+    "Sul"          = "#03102E"
   )) +
   scale_y_continuous(
     labels = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1),
@@ -164,7 +171,11 @@ ggplot(dados_faturamento_regiao, aes(x = as.factor(`Ano base`), y = faturamento_
     axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
     axis.text.y = element_text(size = 12),
     plot.title = element_text(face = "bold", size = 14),
-    plot.subtitle = element_text(size = 12)
+    plot.subtitle = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.position = c(0.12, 0.72),
+    legend.background = element_rect(fill = alpha("white", 0.6)),
+    legend.text = element_text(size = 12)
   )
 
 
@@ -262,7 +273,7 @@ ggplot(dados_rose_embalagem, aes(x = Embalagem, y = Faturamento_Total, fill = Em
   ) +
   theme(
     # Remove o grid secundário para poluir menos o gráfico
-    panel.grid = element_line(color = "gray90"),
+    panel.grid = element_line(color = "white"),
     # Remove as marcas e números do eixo y (que fica implícito pelo tamanho das fatias)
     axis.text.y = element_blank(),
     # Estiliza os nomes das embalagens ao redor do círculo
@@ -285,6 +296,8 @@ library(tidyr)
 library(ggplot2)
 library(scales)
 
+library(tidyverse)
+
 # ==========================================
 # 1. PREPARAÇÃO DOS DADOS POR TIPO DE EMBALAGEM
 # ==========================================
@@ -293,10 +306,10 @@ dados_volume_emb <- dados_agua %>%
   mutate(across(starts_with("Quantidade"), ~ as.numeric(gsub(",", ".", .x)))) %>%
   group_by(`Ano base`) %>%
   summarise(
-    Garrafão          = sum(`Quantidade (litros) Garrafão`, na.rm = TRUE),
+    Garrafão           = sum(`Quantidade (litros) Garrafão`, na.rm = TRUE),
     `Garrafa Plástica` = sum(`Quantidade (litros) Garrafa Plástica`, na.rm = TRUE),
     `Garrafa de Vidro` = sum(`Quantidade (litros) Garrafa de Vidro`, na.rm = TRUE),
-    Copo              = sum(`Quantidade (litros) Copo`, na.rm = TRUE),
+    Copo               = sum(`Quantidade (litros) Copo`, na.rm = TRUE),
     `Outras Embalagens` = sum(`Quantidade (litros) Outras Embalagens`, na.rm = TRUE),
     .groups = 'drop'
   ) %>%
@@ -306,10 +319,10 @@ dados_valor_emb <- dados_agua %>%
   mutate(across(starts_with("Valor"), ~ as.numeric(gsub(",", ".", .x)))) %>%
   group_by(`Ano base`) %>%
   summarise(
-    Garrafão          = sum(`Valor (R$) Garrafão`, na.rm = TRUE),
+    Garrafão           = sum(`Valor (R$) Garrafão`, na.rm = TRUE),
     `Garrafa Plástica` = sum(`Valor (R$) Garrafa Plástica`, na.rm = TRUE),
     `Garrafa de Vidro` = sum(`Valor (R$) Garrafa de Vidro`, na.rm = TRUE),
-    Copo              = sum(`Valor (R$) Copo`, na.rm = TRUE),
+    Copo               = sum(`Valor (R$) Copo`, na.rm = TRUE),
     `Outras Embalagens` = sum(`Valor (R$) Outras Embalagens`, na.rm = TRUE),
     .groups = 'drop'
   ) %>%
@@ -328,25 +341,37 @@ ggplot(dados_bubble_embalagem, aes(x = Volume_Litros, y = Faturamento_Reais, siz
   # Controla o tamanho das bolhas
   scale_size_area(max_size = 10, guide = "none") +
   
+  # Correção: Alterado de scale_fill_manual para scale_color_manual
+  scale_color_manual(values = c(
+    "Garrafão"          = "#C6DBEF", 
+    "Garrafa Plástica"  = "#6BAED6", 
+    "Garrafa de Vidro"  = "#2171B5", 
+    "Copo"              = "#08306B", 
+    "Outras Embalagens" = "#03102E"
+  )) +
+  
   labs(
-    title = "Volume vs. Faturamento por Tipo de Embalagem",
-    subtitle = "Ao longo dos anos (2010 - 2025)",
+    title = "Volume vs. Faturamento",
     x = "Volume Total Produzido (Litros)",
     y = "Faturamento Total (R$)",
     color = "Embalagem"
   ) +
-  theme_classic() +
+  theme_bw() +
   
   # Formatação dos eixos com abreviações e 1 casa decimal
   scale_x_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1)) +
-  scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1, prefix = "R$ ")) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1, prefix = "R$ ")) +
   
   theme(
     axis.title = element_text(size = 14, face = "bold"),
     axis.text = element_text(size = 12, color = "black"),
-    plot.title = element_text(face = "bold", size = 15),
+    plot.title = element_text(face = "bold", size = 18),
     plot.subtitle = element_text(size = 12),
-    legend.position = "right"
+    legend.position = c(0.82, 0.8),
+    legend.background = element_rect(fill = alpha("white", 0)),
+    legend.text = element_text(size = 12)
   )
 
 #==================
@@ -389,16 +414,15 @@ ggplot(dados_rose, aes(x = reorder(UF, Volume_Total), y = Volume_Total, fill = U
   # Aplicação da paleta de cores personalizada em tons de azul
   scale_fill_manual(values = paleta_azuis) +
   labs(
-    title = "Produção de Água Mineral por UF",
-    subtitle = "Volume total em litros (Top 10 Estados)",
+    title = "Top 10: Produção de Água Mineral por estado",
     x = NULL,
     y = NULL,
     fill = "UF"
   ) +
-  theme_minimal(base_size = 13) +
+  theme_light(base_size = 13) +
   scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
   theme(
-    axis.text.x = element_text(face = "bold", size = 14, color = "black"),
+    axis.text.x = element_text(face = "bold", size = 18, color = "black"),
     axis.text.y = element_blank(),
     axis.ticks = element_blank(),
     panel.grid.minor = element_blank(),
@@ -406,3 +430,199 @@ ggplot(dados_rose, aes(x = reorder(UF, Volume_Total), y = Volume_Total, fill = U
     plot.subtitle = element_text(size = 12, hjust = 0.5),
     legend.position = "none"
   )
+
+
+#===============================
+#grafico de bolhas
+#==============================
+
+library(tidyverse)
+library(packcircles)
+
+# 1. Carregando os dados da tabela
+dados <- data.frame(
+  Embalagem = c("Garrafão", "Garrafa Plástica", "Garrafa de Vidro", "Copo", "Outras emb.", "Composição Ind."),
+  Valor_Agregado_Pct = c(25.11, 62.93, 0.77, 2.41, 0.77, 8.00),
+  Volume_Litros_Pct = c(57.30, 20.21, 0.12, 0.70, 0.44, 21.23)
+)
+
+# 2. Cálculo do layout progressivo rigorosamente proporcional ao volume real
+circle.layout <- circleProgressiveLayout(dados$Volume_Litros_Pct, sizetype = "area")
+
+# Une os dados calculados ao dataframe original
+dados_plot <- bind_cols(dados, circle.layout)
+
+# Cria os vértices para desenhar as bolhas
+circle.vertices <- circleLayoutVertices(circle.layout, npoints = 50)
+circle.vertices$Embalagem <- dados_plot$Embalagem[circle.vertices$id]
+
+# 3. Separar categorias grandes (texto dentro) e pequenas (texto na legenda)
+# Definimos um limiar de corte (ex: volume menor que 2% fica sem texto interno)
+dados_plot <- dados_plot %>%
+  mutate(Texto_Interno = ifelse(Volume_Litros_Pct >= 2.0, paste0(Embalagem, "\n", Volume_Litros_Pct, "%"), ""))
+
+# 4. Construção do Gráfico com ggplot2
+ggplot() + 
+  # Desenha os círculos preenchidos e com transparência
+  geom_polygon(data = circle.vertices,
+               aes(x = x, y = y, group = id, fill = Embalagem),
+               colour = "white",
+               linewidth = 0.8,
+               alpha = 0.85) +
+  
+  # Adiciona texto apenas nas bolhas grandes onde há espaço adequado
+  geom_text(data = filter(dados_plot, Volume_Litros_Pct >= 2.0),
+            aes(x = x, y = y, label = Texto_Interno),
+            fontface = "bold", size = 6, color = "#222222", lineheight = 0.9) +
+  
+  # Paleta de cores personalizada
+  scale_fill_manual(values = c(
+    "Garrafão"           = "#C6DBEF", 
+    "Garrafa Plástica"   = "#6BAED6", 
+    "Garrafa de Vidro"   = "#2171B5", 
+    "Copo"               = "#08306B", 
+    "Outras emb."        = "#4292C6",
+    "Composição Ind."    = "#08519C"
+  )) +
+  
+  # Mantém a proporção geométrica correta dos círculos
+  coord_equal() +
+  
+  # Remove eixos e limpa o fundo
+  theme_void() +
+  
+  # Configurações de título e legenda informativa
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold", size = 12),
+    legend.text = element_text(size = 12),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, hjust = 0.5, color = "gray40", margin = margin(b = 15))
+  ) +
+  labs(
+    title = "Distribuição de Volume (%) por Embalagem/Uso",
+    # subtitle = "Categorias menores identificadas via legenda lateral de alta precisão",
+    fill = "Embalagem"
+  )
+
+#====================
+
+#=========================
+
+library(tidyverse)
+library(packcircles)
+
+# 1. Carregando os dados da tabela
+dados <- data.frame(
+  Embalagem = c("Garrafão", "Garrafa Plástica", "Garrafa de Vidro", "Copo", "Outras emb.", "Composição Ind."),
+  Valor_Agregado_Pct = c(25.11, 62.93, 0.77, 2.41, 0.77, 8.00),
+  Volume_Litros_Pct = c(57.30, 20.21, 0.12, 0.70, 0.44, 21.23)
+)
+
+# 2. Cálculo do layout progressivo rigorosamente proporcional ao volume real
+circle.layout <- circleProgressiveLayout(dados$Valor_Agregado_Pct, sizetype = "area")
+
+# Une os dados calculados ao dataframe original
+dados_plot <- bind_cols(dados, circle.layout)
+
+# Cria os vértices para desenhar as bolhas
+circle.vertices <- circleLayoutVertices(circle.layout, npoints = 50)
+circle.vertices$Embalagem <- dados_plot$Embalagem[circle.vertices$id]
+
+# 3. Separar categorias grandes (texto dentro) e pequenas (texto na legenda)
+# Definimos um limiar de corte (ex: volume menor que 2% fica sem texto interno)
+dados_plot <- dados_plot %>%
+  mutate(Texto_Interno = ifelse(Valor_Agregado_Pct >= 2.0, paste0(Embalagem, "\n", Valor_Agregado_Pct, "%"), ""))
+
+# 4. Construção do Gráfico com ggplot2
+ggplot() + 
+  # Desenha os círculos preenchidos e com transparência
+  geom_polygon(data = circle.vertices,
+               aes(x = x, y = y, group = id, fill = Embalagem),
+               colour = "white",
+               linewidth = 0.8,
+               alpha = 0.85) +
+  
+  # Adiciona texto apenas nas bolhas grandes onde há espaço adequado
+  geom_text(data = filter(dados_plot, Valor_Agregado_Pct >= 2.0),
+            aes(x = x, y = y, label = Texto_Interno),
+            fontface = "bold", size = 6, color = "#222222", lineheight = 0.9) +
+  
+  # Paleta de cores personalizada
+  scale_fill_manual(values = c(
+    "Garrafão"           = "#C6DBEF", 
+    "Garrafa Plástica"   = "#6BAED6", 
+    "Garrafa de Vidro"   = "#2171B5", 
+    "Copo"               = "#08306B", 
+    "Outras emb."        = "#4292C6",
+    "Composição Ind."    = "#08519C"
+  )) +
+  
+  # Mantém a proporção geométrica correta dos círculos
+  coord_equal() +
+  
+  # Remove eixos e limpa o fundo
+  theme_void() +
+  
+  # Configurações de título e legenda informativa
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold", size = 12),
+    legend.text = element_text(size = 12),
+    plot.title = element_text(face = "bold", size = 16, margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 11, hjust = 0.5, color = "gray40", margin = margin(b = 15))
+  ) +
+  labs(
+    title = "Distribuição de Valor (%) por Embalagem/Uso",
+    # subtitle = "Categorias menores identificadas via legenda lateral de alta precisão",
+    fill = "Embalagem"
+  )
+
+#========================================================
+#Ranking das UF
+#========================================================
+
+library(tidyverse)
+
+# 1. Carregando os dados da imagem
+dados_top10 <- data.frame(
+  UF = c("SP", "PE", "BA", "RS", "PA", "CE", "RJ", "MG", "MT", "RN"),
+  Volume = c(40289212788.89, 25940186231.32, 25350095651.24, 13566071808.89, 
+             11941393989.24, 9538020367.54, 9425755343.21, 8842869480.27, 
+             6868405983.03, 6862106822.61)
+)
+
+# 2. Construção do Gráfico de Barras Horizontais Limpo
+ggplot(dados_top10, aes(x = reorder(UF, Volume), y = Volume)) +
+  
+  geom_col(fill = "#DEEBF7") +
+  
+  # Inverte os eixos para o formato horizontal e ordena corretamente
+  coord_flip() +
+  
+  geom_text(aes(label = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1)(Volume)),
+            hjust = -0.15, size = 5, fontface = "bold", color = "#333333") +
+  geom_te
+
+scale_y_continuous(
+  expand = expansion(mult = c(0, 0.15)),
+  labels = scales::label_number(scale_cut = scales::cut_short_scale())
+) +
+  
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid.major.y = element_blank(), # Remove linhas horizontais de fundo
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_line(color = "#E5E5E5", linetype = "dashed"),
+    axis.title.y = element_blank(),     
+    axis.text.y = element_text(face = "bold", size = 12, color = "#222222"),
+    axis.text.x = element_text(size = 12),
+    axis.title = element_text(size = 14),
+    plot.title = element_text(face = "bold", size = 16, hjust = 0, margin = margin(b = 15)),
+    
+    labs(
+      title = "Top 10 Estados: Produção de Água Mineral",
+      x = NULL,
+      y = "Volume Total (Litros)"
+    ))
+
