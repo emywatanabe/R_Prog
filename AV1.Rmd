@@ -1,0 +1,94 @@
+---
+title: "AV1"
+author: "Emily"
+date: "2026-10-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#Grafico duplo
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# ==========================================
+# 1. PREPARAÇÃO DOS DADOS TEMPORAIS (Volume e Faturamento)
+# ==========================================
+dados_temporal <- dados_agua %>%
+  mutate(
+    # Converte e soma todas as quantidades de litros
+    total_litros = as.numeric(gsub(",", ".", `Quantidade (litros) Garrafão`)) + 
+      as.numeric(gsub(",", ".", `Quantidade (litros) Garrafa Plástica`)) +
+      as.numeric(gsub(",", ".", `Quantidade (litros) Garrafa de Vidro`)) +
+      as.numeric(gsub(",", ".", `Quantidade (litros) Copo`)) +
+      as.numeric(gsub(",", ".", `Quantidade (litros) Outras Embalagens`)),
+    
+    # Converte e soma todos os valores em R$
+    total_valor = as.numeric(gsub(",", ".", `Valor (R$) Garrafão`)) + 
+      as.numeric(gsub(",", ".", `Valor (R$) Garrafa Plástica`)) +
+      as.numeric(gsub(",", ".", `Valor (R$) Garrafa de Vidro`)) +
+      as.numeric(gsub(",", ".", `Valor (R$) Copo`)) +
+      as.numeric(gsub(",", ".", `Valor (R$) Outras Embalagens`))
+  ) %>%
+  group_by(`Ano base`) %>%
+  summarise(
+    Volume_Total_Litros = sum(total_litros, na.rm = TRUE),
+    Faturamento_Total_Reais = sum(total_valor, na.rm = TRUE),
+    .groups = 'drop'
+  ) %>%
+  pivot_longer(
+    cols = c(Volume_Total_Litros, Faturamento_Total_Reais),
+    names_to = "Metrica",
+    values_to = "Valor"
+  ) %>%
+  mutate(Metrica = if_else(Metrica == "Volume_Total_Litros", "Volume Total (Litros)", "Faturamento Total (R$)"))
+
+
+# ==========================================
+# 2. GRÁFICO DUPLO: VOLUME E FATURAMENTO POR ANO
+# ==========================================
+ggplot(dados_temporal, aes(x = as.factor(`Ano base`), y = Valor, fill = Metrica)) +
+  geom_col(show.legend = FALSE) +
+  # Separa em dois painéis independentes para o volume e o faturamento terem escalas corretas
+  facet_wrap(~ Metrica, scales = "free_y", ncol = 1) +
+  labs(
+    title = "Evolução Anual do Setor de Água Mineral",
+    subtitle = "Comparativo entre Volume Produzido e Faturamento Financeiro",
+    x = "Ano Base",
+    y = "Valor / Quantidade"
+  ) +
+  theme_classic() +
+  scale_y_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale(), accuracy = 0.1)) +
+  theme(
+    axis.title = element_text(size = 14, face = "bold"),
+    axis.text = element_text(size = 12, color = "black"),
+    axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 11),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 12),
+    strip.text = element_text(face = "bold", size = 12) # Estiliza o título de cada painel
+  )

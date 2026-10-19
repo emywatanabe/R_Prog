@@ -1,0 +1,16 @@
+---
+title: "Análise de Dados de Produção e Comercialização de água de 2010 a 2025"
+author: "Emily Yamagutti Watanabe"
+date: "18 de setembro de 2026"
+output: html_document
+---
+
+# Produção e Comercialização de Água Mineral
+
+## Dados de 2010 a 2025 comparadas por regiões do Brasil
+
+Gráfico 1: Top 10 produtores de Água no Brasil
+
+```{r, out.width="60%"m fig,align='left', echo=F}
+knitr::include_graphics("~/Documentos/Disciplinas/2026-2/Visualização/Imagens/top10.svg")
+```
