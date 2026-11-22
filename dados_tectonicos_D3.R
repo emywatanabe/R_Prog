@@ -8,7 +8,7 @@ library(shiny)
 volcano <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2020/2020-05-12/volcano.csv",
   show_col_types = FALSE)
 
-# filtar os dados para o gráfico animado
+# Filtrar os dados base para o gráfico animado
 dados_tectonicos <- volcano |>
   filter(!is.na(tectonic_settings), tectonic_settings != "Unknown") |>
   count(tectonic_settings, sort = TRUE) |>
@@ -23,10 +23,16 @@ dados_tectonicos <- volcano |>
 
 k <- nrow(dados_tectonicos)
 
+# Filtro da região do vulcão
+regioes_vulcao <- volcano |>
+  filter(!is.na(region)) |>
+  count(region, sort = TRUE) |>
+  pull(region)
+
 # Execução de uma categoria por vez
 anim_dados <- crossing(
   dados_tectonicos,
-  etapa = seq(0, k, by = 0.5)
+  etapa = seq(0, k, by = 0.25)
 ) |>
   mutate(
     n_atual = n * pmin(1, pmax(0, etapa - (ordem - 1)))
@@ -35,7 +41,15 @@ anim_dados <- crossing(
 # 3. Construir o ggplot + gganimate - feito com o esquisse e ajustado ao codigo principal
 grafico <- ggplot(anim_dados) +
   aes(x = n_atual, y = tectonic_settings) +
-  geom_col(fill = "red") +
+  geom_segment(
+    aes(x = 0, xend = n_atual, y = tectonic_settings, yend = tectonic_settings),
+    color = "gray90",
+    linewidth = 1.4
+  ) +
+  geom_point(
+    colour = "darkorange2",
+    size = 5
+  ) +
   geom_text(
     aes(label = ifelse(n_atual > 0, round(n_atual), "")),
     hjust = -0.3,
@@ -59,24 +73,21 @@ grafico <- ggplot(anim_dados) +
   ) +
   transition_time(etapa) +
   ease_aes("cubic-out")
-grafico
 
 # 4. Aplicativo Shiny
 ui <- fluidPage(
-  titlePanel("Configurações Tectônicas dos Vulcões"),
+  titlePanel("Contexto Tectônico dos Vulcões"),
   sidebarLayout(
     sidebarPanel(
-      sliderInput(
-        inputId = "fps",
-        label = "Velocidade da animação (FPS):",
-        min = 5,
-        max = 40,
-        value = 20,
-        step = 5
+      selectInput(
+        inputId = "regiao_vulcao",
+        label = "Região (region):",
+        choices = c("Todos", regioes_vulcao),
+        selected = "Todos"
       ),
       actionButton(
         inputId = "gerar",
-        label = "Atualizar Animação",
+        label = "Atualizar",
         class = "btn-primary"
       )
     ),
@@ -88,13 +99,86 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   gif_path <- eventReactive(input$gerar, {
+    dados_filtrados <- volcano |>
+      filter(!is.na(tectonic_settings), tectonic_settings != "Unknown")
+    
+    if (!identical(input$regiao_vulcao, "Todos")) {
+      dados_filtrados <- dados_filtrados |>
+        filter(region == input$regiao_vulcao)
+    }
+    
+    dados_tectonicos_atual <- dados_filtrados |>
+      count(tectonic_settings, sort = TRUE) |>
+      mutate(
+        ordem = row_number(),
+        tectonic_settings = str_replace(tectonic_settings, " / ", " /\n"),
+        tectonic_settings = factor(
+          tectonic_settings,
+          levels = rev(unique(tectonic_settings))
+        )
+      )
+    
+    validate(
+      need(
+        nrow(dados_tectonicos_atual) > 0,
+        "Não há dados válidos de contexto tectônico para a região selecionada."
+      )
+    )
+    
+    k_atual <- nrow(dados_tectonicos_atual)
+    
+    anim_dados_atual <- crossing(
+      dados_tectonicos_atual,
+      etapa = seq(0, k_atual, by = 0.5)
+    ) |>
+      mutate(
+        n_atual = n * pmin(1, pmax(0, etapa - (ordem - 1)))
+      )
+    
+    grafico_atual <- ggplot(anim_dados_atual) +
+      aes(x = n_atual, y = tectonic_settings) +
+      geom_segment(
+        aes(x = 0, xend = n_atual, y = tectonic_settings, yend = tectonic_settings),
+        color = "gray90",
+        linewidth = 1.4
+      ) +
+      geom_point(
+        colour = "darkorange2",
+        size = 5
+      ) +
+      geom_text(
+        aes(label = ifelse(n_atual > 0, round(n_atual), "")),
+        hjust = -0.3,
+        fontface = "bold",
+        size = 4.5
+      ) +
+      coord_cartesian(xlim = c(0, max(dados_tectonicos_atual$n) * 1.15)) +
+      labs(
+        title = "Contexto Tectônico dos vulcões ",
+        subtitle = paste("Região:", input$regiao_vulcao),
+        x = "Contexto tectônico",
+        y = NULL
+      ) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(size = 20L, face = "bold.italic"),
+        plot.subtitle = element_text(size = 12L, color = "gray30"),
+        axis.title.y = element_text(size = 13L, face = "bold"),
+        axis.title.x = element_text(size = 13L, face = "bold"),
+        axis.text.y = element_text(face = "bold", size = 13L),
+        axis.text.x = element_text(face = "bold", size = 12L, vjust = 3L),
+        panel.grid.major.y = element_blank()
+      ) +
+      transition_time(etapa) +
+      ease_aes("cubic-in-out")
+    
     outfile <- tempfile(fileext = ".gif")
     
     withProgress(message = "Renderizando animação...", value = 0.5, {
       anim <- animate(
-        grafico,
-        nframes = length(unique(anim_dados$etapa)) * 4,
-        fps = input$fps,
+        grafico_atual,
+        nframes = length(unique(anim_dados_atual$etapa)) * 4,
+        fps = 20,
         width = 650,
         height = 500,
         end_pause = 20,
@@ -114,7 +198,7 @@ server <- function(input, output, session) {
       contentType = "image/gif",
       width = 650,
       height = 500,
-      alt = "Gráfico de barras animado das configurações tectônicas dos vulcões"
+      alt = "Gráfico lollipop animado das configurações tectônicas dos vulcões"
     )
   }, deleteFile = TRUE)
 }
