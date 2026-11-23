@@ -1,11 +1,3 @@
 # R_Prog
-## este repositório é de elementos de programação
-### esse é um guia
-
-###separador em markdown (teste)
-***
-___
-=== ou ---
-###
-
-
+## Rste repositório é das disciplinas da UFPR 
+Exercícios e desafios
