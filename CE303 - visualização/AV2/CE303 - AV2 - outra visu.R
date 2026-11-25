@@ -9,9 +9,10 @@ library(geobr)
 library(sf)
 
 # =====================================================================================
-# Estrutura do dashboard (2 abas):
-#   1. Estados e Regioes -> Onde e quanto? (KPIs 2025 + base 100 + R$/L por ano/UF + mapa interativo + top 10 UFs)
-#   2. Embalagens        -> O que mudou?   (R$/L por embalagem + dispersao UF + pictograma 5 embalagens + R$/L por ano)
+# Estrutura do dashboard (3 abas):
+#   1. Contexto Historico  -> KPIs + Volume vs Valor (linhas 2010, 2015, 2020, 2025) + Dot plot R$/L por ano e UF (bruto)
+#   2. Embalagens          -> Cards R$/L e Δ% por embalagem + Dispersao UF (foco) + Evolucao R$/L por embalagem com Δ%
+#   3. Estados e Regioes   -> Mapa interativo por UF + Ranking Top 10 UFs e concentracao acumulada
 # Graficos interativos com plotly (ggplot2 -> ggplotly): hover com detalhes, zoom e pan.
 # Escopo dos numeros: agua embalada (5 embalagens), sem "produtos industrializados".
 # Valores nominais (sem deflacao).
@@ -32,8 +33,9 @@ emb_cols_all <- c(
 sidebar <- dashboardSidebar(
   sidebarMenu(
     id = "abas",
-    menuItem("Estados e Regioes", tabName = "estados", icon = icon("map"), selected = TRUE),
-    menuItem("Embalagens", tabName = "embalagens", icon = icon("bottle-water"))
+    menuItem("Contexto Historico", tabName = "contexto", icon = icon("clock-rotate-left"), selected = TRUE),
+    menuItem("Embalagens", tabName = "embalagens", icon = icon("bottle-water")),
+    menuItem("Estados e Regioes", tabName = "estados", icon = icon("map"))
   ),
   hr(),
   uiOutput("ui_anos"),
@@ -90,24 +92,23 @@ body <- dashboardBody(
       .controles-mapa { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: flex-end; margin-bottom: 8px; }
       .controles-mapa .form-group { margin-bottom: 4px; }
 
-      /* Pictograma Tufte: 5 colunas em linha, sem caixa pesada nem cores decorativas */
-      .picto-grid {
+      /* Cards de R$/L por embalagem no padrao Tufte */
+      .emb-kpi-grid {
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 4px;
+        gap: 14px;
         padding: 4px 0;
       }
       @media (max-width: 992px) {
-        .picto-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .emb-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       }
-      .picto-card {
-        background: transparent;
-        border: none;
-        border-top: 1px solid #e2ece9;
-        padding: 12px 6px 8px 6px;
-        text-align: center;
+      .emb-kpi-card {
+        border-top: 2px solid #163a42;
+        padding: 8px 6px 4px 6px;
       }
+      .emb-kpi-nome { font-size: 12px; font-weight: 600; color: #163a42; text-transform: uppercase; letter-spacing: 0.3px; }
+      .emb-kpi-preco { font-size: 22px; font-weight: 700; color: #0f172a; margin: 2px 0; }
+      .emb-kpi-sub { font-size: 12px; color: #475569; }
 
       /* Notas sob os graficos (substituem subtitulo/legenda, que o plotly nao exibe) */
       .nota { font-size: 12px; color: #475569; margin: 4px 6px 0 6px; }
@@ -117,24 +118,60 @@ body <- dashboardBody(
     "))
   ),
   tabItems(
-    # ABA 1: Estados e Regioes
+    # ABA 1: Contexto Historico (Visao Geral)
     tabItem(
-      tabName = "estados",
+      tabName = "contexto",
       fluidRow(column(width = 12, uiOutput("resumo_mapa_ui"))),
       fluidRow(
         box(
-          title = "Comparacao anual: Valor x Volume (indice base 100)",
-          width = 6,
-          plotlyOutput("plot_indice_vol_val", height = "370px"),
-          uiOutput("nota_indice")
-        ),
-        box(
-          title = "Preco medio por litro (R$/L) por ano e por UF",
-          width = 6,
-          plotlyOutput("plot_preco_ano_uf", height = "370px"),
-          uiOutput("nota_preco_ano_uf")
+          title = "Producao ao longo do tempo: Volume (Bi L) x Valor (R$ Bi)",
+          width = 12,
+          plotlyOutput("plot_vol_val_tempo", height = "360px"),
+          uiOutput("nota_vol_val_tempo")
         )
       ),
+      fluidRow(
+        box(
+          title = "Preco medio por litro (R$/L) por ano e por UF (dispersao bruta da base)",
+          width = 12,
+          plotlyOutput("dotplot_preco_ano_uf", height = "430px"),
+          uiOutput("nota_dotplot_preco_ano_uf")
+        )
+      )
+    ),
+    
+    # ABA 2: Embalagens (foco em decisao: cards R$/L + dispersao UF + evolucao R$/L com delta%)
+    tabItem(
+      tabName = "embalagens",
+      fluidRow(
+        box(
+          title = "Resumo do preco por litro por embalagem (R$/L)",
+          width = 12,
+          uiOutput("cards_preco_emb_ui"),
+          div(class = "nota", "Preco medio ponderado (Valor / Volume) e variacao percentual (Δ%) entre o ano inicial e final do filtro.")
+        )
+      ),
+      fluidRow(
+        box(
+          title = "Dispersao volume x R$/litro por UF (decisao por mercado e embalagem)",
+          width = 12,
+          plotlyOutput("scatter_uf", height = "430px"),
+          uiOutput("nota_scatter")
+        )
+      ),
+      fluidRow(
+        box(
+          title = "Evolucao do preco por litro por embalagem (R$/L) e variacao percentual (Δ%)",
+          width = 12,
+          plotlyOutput("plot_preco_emb_ano", height = "300px"),
+          uiOutput("nota_preco_emb_ano")
+        )
+      )
+    ),
+    
+    # ABA 3: Estados e Regioes
+    tabItem(
+      tabName = "estados",
       fluidRow(
         box(
           title = "Mapa do Brasil por UF",
@@ -162,41 +199,6 @@ body <- dashboardBody(
           width = 6,
           plotlyOutput("plot_top10_uf", height = "525px"),
           uiOutput("nota_top10_uf")
-        )
-      )
-    ),
-    
-    # ABA 2: Embalagens -- o que mudou
-    tabItem(
-      tabName = "embalagens",
-      fluidRow(
-        box(
-          title = "Preco por litro de cada embalagem (R$/L)",
-          width = 6,
-          plotlyOutput("plot_preco_emb", height = "360px"),
-          uiOutput("nota_preco_emb")
-        ),
-        box(
-          title = "Dispersao volume x R$/litro por UF",
-          width = 6,
-          plotlyOutput("scatter_uf", height = "360px"),
-          uiOutput("nota_scatter")
-        )
-      ),
-      fluidRow(
-        box(
-          title = "Pictograma: participacao em Volume (%) e Valor (%)",
-          width = 12,
-          uiOutput("cards_embalagens_html"),
-          div(class = "nota", "Preenchimento proporcional ao volume; negrito indica a metrica de referencia ativa.")
-        )
-      ),
-      fluidRow(
-        box(
-          title = "Evolucao do preco por litro, por embalagem (mesma escala)",
-          width = 12,
-          plotlyOutput("plot_preco_emb_ano", height = "280px"),
-          div(class = "nota", "Mesma escala em todos os paineis. Valores nominais.")
         )
       )
     )
@@ -292,7 +294,7 @@ mapa_poly <- local({
   co[co$anel == 1, c("lon", "lat", "UF", "grupo")]
 })
 
-# ---------- Formatadores, pictograma, tema e helper do plotly ----------
+# ---------- Formatadores, tema e helper do plotly ----------
 fmt_bi_l <- label_number(scale = 1e-9, accuracy = 0.01, decimal.mark = ",", big.mark = " ", suffix = " Bi L")
 fmt_bi_brl <- label_number(scale = 1e-9, accuracy = 0.01, decimal.mark = ",", big.mark = " ", prefix = "R$ ", suffix = " Bi")
 fmt_num <- function(x, acc = 0.01) number(x, accuracy = acc, decimal.mark = ",", big.mark = " ")
@@ -311,46 +313,6 @@ kpi_item <- function(rotulo, valor, detalhe = "") {
     div(class = "kpi-valor", valor),
     div(class = "kpi-detalhe", detalhe)
   )
-}
-
-# Pictograma no padrao Tufte: preenchimento monocromatico sobrio (#163a42) sobre cinza neutro (#cbd5e1)
-card_embalagem_html <- function(nome, icone, tamanho_px, pct_vol, pct_val, metrica = "litros") {
-  fill_pct <- min(max(pct_vol * 100, 5), 100)
-  top_cut  <- 100 - fill_pct
-  cor_tufte <- "#163a42"
-  
-  peso_vol <- if (identical(metrica, "litros")) "700" else "400"
-  peso_val <- if (identical(metrica, "valor"))  "700" else "400"
-  cor_vol  <- if (identical(metrica, "litros")) "#0f172a" else "#64748b"
-  cor_val  <- if (identical(metrica, "valor"))  "#0f172a" else "#64748b"
-  
-  HTML(sprintf(
-    '
-    <div class="picto-card">
-      <div style="font-weight:600; color:#163a42; font-size:12px; margin-bottom:8px; min-height:28px; display:flex; align-items:center; justify-content:center;">%s</div>
-
-      <div style="position:relative; display:inline-block; font-size:%dpx; line-height:1; margin:6px 0 10px 0;">
-        <i class="%s" style="color:#cbd5e1;"></i>
-        <i class="%s" style="color:%s; position:absolute; left:0; top:0; clip-path: inset(%s%% 0 0 0);"></i>
-      </div>
-
-      <div style="font-size:11px; font-weight:%s; color:%s;">Vol: %s</div>
-      <div style="font-size:11px; font-weight:%s; color:%s;">Val: %s</div>
-    </div>
-    ',
-    nome,
-    tamanho_px,
-    icone,
-    icone,
-    cor_tufte,
-    format(round(top_cut, 1), nsmall = 1),
-    peso_vol,
-    cor_vol,
-    scales::percent(pct_vol, accuracy = 0.1, decimal.mark = ","),
-    peso_val,
-    cor_val,
-    scales::percent(pct_val, accuracy = 0.1, decimal.mark = ",")
-  ))
 }
 
 cor_valor  <- "#163a42"
@@ -420,7 +382,7 @@ server <- function(input, output, session) {
              input$uf == "Todas" | UF == input$uf)
   })
   
-  # =====================  ABA 1: ESTADOS E REGIOES  =====================
+  # =====================  ABA 1: CONTEXTO HISTORICO  =====================
   
   output$resumo_mapa_ui <- renderUI({
     req(input$regiao, input$uf, input$embalagem)
@@ -507,167 +469,382 @@ server <- function(input, output, session) {
       group_by(ano) |>
       summarise(vol = sum(vol_sel, na.rm = TRUE), val = sum(val_sel, na.rm = TRUE), .groups = "drop") |>
       arrange(ano) |>
-      mutate(preco = if_else(vol > 0, val / vol, NA_real_))
+      mutate(
+        vol_bi = vol / 1e9,
+        val_bi = val / 1e9,
+        preco  = if_else(vol > 0, val / vol, NA_real_)
+      )
   })
   
-  output$nota_indice <- renderUI({
-    req(input$embalagem)
+  output$nota_vol_val_tempo <- renderUI({
     s <- serie_ano()
-    ano_ini <- if (nrow(s) > 0) min(s$ano) else 2010L
-    ano_fim <- if (nrow(s) > 0) max(s$ano) else 2025L
-    resumo_cmp <- if (nrow(s) >= 2 && s$vol[1] > 0 && s$val[1] > 0) {
-      d_vol <- (s$vol[nrow(s)] / s$vol[1]) - 1
-      d_val <- (s$val[nrow(s)] / s$val[1]) - 1
+    req(nrow(s) >= 2)
+    ano_ini <- min(s$ano)
+    ano_fim <- max(s$ano)
+    d_vol <- if (s$vol[1] > 0) (s$vol[nrow(s)] / s$vol[1]) - 1 else NA_real_
+    d_val <- if (s$val[1] > 0) (s$val[nrow(s)] / s$val[1]) - 1 else NA_real_
+    txt_var <- if (!is.na(d_vol) && !is.na(d_val)) {
       paste0(
-        "Comparacao ", ano_fim, " vs ", ano_ini, ": Valor ",
+        "Variacao ", ano_fim, " vs ", ano_ini, ": Valor ",
         if_else(d_val >= 0, "+", ""), fmt_pct(d_val, 0.1),
         " vs Volume ", if_else(d_vol >= 0, "+", ""), fmt_pct(d_vol, 0.1), ". "
       )
     } else {
       ""
     }
-    extra <- if (2024L %in% s$ano) " O volume de 2024 destoa dos anos vizinhos: interpretar com cautela." else ""
-    div(class = "nota", paste0(resumo_cmp, "Embalagem: ", rotulo_emb(input$embalagem), ". Valores nominais.", extra))
+    div(class = "nota", paste0(
+      txt_var,
+      "Linhas verticais marcam 2010, 2015, 2020 e 2025. O valor nominal cresce mais rapido que o volume. Valores nominais."
+    ))
   })
   
-  output$plot_indice_vol_val <- renderPlotly({
+  output$plot_vol_val_tempo <- renderPlotly({
     s <- serie_ano()
-    validate(
-      need(nrow(s) >= 2, "Selecione pelo menos 2 anos para comparar a evolucao."),
-      need(s$vol[1] > 0 && s$val[1] > 0, "Ano inicial sem volume ou valor positivo para base 100 neste recorte.")
-    )
+    validate(need(nrow(s) >= 2, "Selecione pelo menos 2 anos para ver a evolucao temporal."))
     
-    d <- s |>
-      mutate(
-        idx_vol = (vol / vol[1]) * 100,
-        idx_val = (val / val[1]) * 100,
-        var_vol = (vol / vol[1]) - 1,
-        var_val = (val / val[1]) - 1
-      )
-    
-    ano_ini <- as.integer(min(d$ano))
-    ano_fim <- as.integer(max(d$ano))
-    
-    long <- d |>
-      select(ano, idx_vol, idx_val, var_vol, var_val) |>
+    long <- s |>
+      select(ano, vol_bi, val_bi, preco) |>
       pivot_longer(
-        cols = c(idx_vol, idx_val),
+        cols = c(vol_bi, val_bi),
         names_to = "serie",
-        values_to = "indice"
+        values_to = "valor_bi"
       ) |>
       mutate(
-        var_pct = if_else(serie == "idx_vol", var_vol, var_val),
-        serie = recode(serie, idx_vol = "Volume", idx_val = "Valor"),
-        sinal = if_else(var_pct >= 0, "+", ""),
+        serie_lbl = recode(serie, vol_bi = "Volume (Bi L)", val_bi = "Valor (R$ Bi)"),
         tip = paste0(
-          serie, " em ", ano, ": ", fmt_num(indice, 0.1),
-          " (", sinal, fmt_pct(var_pct, 0.1), " vs ", ano_ini, ")"
+          serie_lbl, " em ", ano, ": ",
+          if_else(serie == "val_bi", paste0("R$ ", fmt_num(valor_bi), " Bi"), paste0(fmt_num(valor_bi), " Bi L")),
+          "<br>Preco medio: R$ ", fmt_num(preco), "/L"
         )
       )
     
-    fim <- long |> filter(ano == ano_fim)
+    anos_marco <- intersect(c(2010L, 2015L, 2020L, 2025L), unique(as.integer(s$ano)))
+    y_top <- max(long$valor_bi, na.rm = TRUE) * 1.12
     
     p <- ggplot() +
-      geom_hline(yintercept = 100, linetype = "dotted", colour = "#94a3b8") +
-      geom_ribbon(
-        data = d,
-        aes(x = ano, ymin = pmin(idx_vol, idx_val), ymax = pmax(idx_vol, idx_val)),
-        fill = "#10b981",
-        alpha = 0.12
-      ) +
-      geom_line(data = long, aes(x = ano, y = indice, colour = serie, group = serie), linewidth = 1.2) +
-      geom_point(data = long, aes(x = ano, y = indice, colour = serie, text = tip), size = 1.8) +
-      geom_point(data = fim, aes(x = ano, y = indice, colour = serie, text = tip), size = 3.2) +
-      geom_text(
-        data = fim,
-        aes(
-          x = ano, y = indice, colour = serie,
-          label = paste0(
-            serie, " ", fmt_num(indice, 0.1),
-            " (", if_else(var_pct >= 0, "+", ""), fmt_pct(var_pct, 0.1), " vs ", ano_ini, ")"
-          )
-        ),
-        hjust = 0, nudge_x = 0.35, fontface = "bold", size = 3.4
-      ) +
-      scale_colour_manual(values = c(Volume = cor_volume, Valor = cor_valor)) +
+      { if (length(anos_marco) > 0) geom_vline(xintercept = anos_marco, linetype = "dashed", colour = "#94a3b8", linewidth = 0.5) } +
+      { if (length(anos_marco) > 0) annotate("text", x = anos_marco, y = y_top, label = as.character(anos_marco),
+                                             vjust = 1, hjust = -0.15, size = 3.1, colour = "#475569", fontface = "bold") } +
+      geom_line(data = long, aes(x = ano, y = valor_bi, colour = serie_lbl, group = serie_lbl), linewidth = 1.25) +
+      geom_point(data = long, aes(x = ano, y = valor_bi, colour = serie_lbl, text = tip), size = 2.1) +
+      scale_colour_manual(values = c("Volume (Bi L)" = cor_volume, "Valor (R$ Bi)" = cor_valor)) +
       scale_x_continuous(
-        breaks = seq(ano_ini, ano_fim, by = 1L),
-        labels = function(x) sprintf("%d", as.integer(x)),
-        expand = expansion(mult = c(0.02, 0.35))
+        breaks = seq(min(s$ano), max(s$ano), by = 1L),
+        labels = function(x) sprintf("%d", as.integer(x))
       ) +
-      scale_y_continuous(labels = label_number(accuracy = 1, big.mark = " ")) +
-      labs(x = NULL, y = paste0("Indice (", ano_ini, " = 100)")) +
+      scale_y_continuous(
+        limits = c(0, y_top * 1.05),
+        labels = label_number(accuracy = 0.1, decimal.mark = ",", big.mark = " ")
+      ) +
+      labs(x = NULL, y = "Bi L  /  R$ Bi") +
       tema_base() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
     
     para_plotly(p)
   })
   
-  dados_preco_ano_uf <- reactive({
-    req(input$anos, input$regiao, input$uf, input$embalagem)
-    df_uf_ano <- agua_clean |>
-      filter(ano >= as.integer(input$anos[1]), ano <= as.integer(input$anos[2]),
-             input$regiao == "Todas" | regiao == input$regiao) |>
-      prepara_base(input$embalagem) |>
+  dados_dotplot_bruto <- reactive({
+    req(input$anos, input$regiao, input$uf)
+    agua_clean |>
+      filter(
+        ano >= as.integer(input$anos[1]), ano <= as.integer(input$anos[2]),
+        input$regiao == "Todas" | regiao == input$regiao,
+        input$uf == "Todas" | UF == input$uf
+      ) |>
+      prepara_base("todas") |>
       group_by(ano, UF, regiao) |>
+      summarise(
+        vol = sum(vol_sel, na.rm = TRUE),
+        val = sum(val_sel, na.rm = TRUE),
+        .groups = "drop"
+      ) |>
+      filter(vol > 0, val > 0) |>
+      mutate(
+        preco = val / vol,
+        tip = paste0(
+          UF, " (", regiao, ") — ", ano,
+          "<br>Preco medio bruto: R$ ", fmt_num(preco), "/L",
+          "<br>Volume: ", fmt_num(vol / 1e9), " Bi L",
+          "<br>Valor: R$ ", fmt_num(val / 1e9), " Bi"
+        )
+      )
+  })
+  
+  output$nota_dotplot_preco_ano_uf <- renderUI({
+    d <- dados_dotplot_bruto()
+    req(nrow(d) > 0)
+    div(class = "nota", paste0(
+      "Valor bruto da base (todas as embalagens somadas, sem filtro de embalagem). ",
+      "Faixa observada no recorte: R$ ", fmt_num(min(d$preco)), "/L a R$ ", fmt_num(max(d$preco)), "/L. ",
+      "Linhas verticais em 2010, 2015, 2020 e 2025."
+    ))
+  })
+  
+  output$dotplot_preco_ano_uf <- renderPlotly({
+    d <- dados_dotplot_bruto()
+    validate(need(nrow(d) > 0, "Sem dados para exibir no recorte selecionado."))
+    
+    med_uf <- d |>
+      group_by(UF) |>
+      summarise(med_p = median(preco, na.rm = TRUE), .groups = "drop") |>
+      arrange(med_p)
+    
+    d <- d |>
+      mutate(UF_ord = factor(UF, levels = med_uf$UF))
+    
+    anos_marco <- intersect(c(2010L, 2015L, 2020L, 2025L), unique(as.integer(d$ano)))
+    y_max <- max(d$preco, na.rm = TRUE) * 1.08
+    
+    p <- ggplot(d, aes(x = ano, y = preco)) +
+      { if (length(anos_marco) > 0) geom_vline(xintercept = anos_marco, linetype = "dashed", colour = "#cbd5e1", linewidth = 0.5) } +
+      geom_point(aes(text = tip, colour = UF_ord), alpha = 0.78, size = 2.3) +
+      scale_x_continuous(
+        breaks = seq(min(d$ano), max(d$ano), by = 1L),
+        labels = function(x) sprintf("%d", as.integer(x))
+      ) +
+      scale_y_continuous(
+        limits = c(0, y_max),
+        labels = label_number(prefix = "R$ ", accuracy = 0.05, decimal.mark = ",")
+      ) +
+      labs(x = NULL, y = "Preco medio bruto (R$/L)") +
+      tema_base() +
+      theme(
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major.y = element_line(colour = "#e8efed", linewidth = 0.35)
+      )
+    
+    para_plotly(p)
+  })
+  
+  # =====================  ABA 2: EMBALAGENS  =====================
+  resumo_emb <- reactive({
+    df <- prepara_base(dados_filtrados(), "todas")
+    anos_df <- sort(unique(df$ano))
+    ano_ini <- if (length(anos_df) > 0) min(anos_df) else NA_integer_
+    ano_fim <- if (length(anos_df) > 0) max(anos_df) else NA_integer_
+    
+    bind_rows(lapply(seq_len(nrow(emb_meta)), function(i) {
+      col_l <- emb_meta$col_l[i]
+      col_v <- emb_meta$col_v[i]
+      
+      vol_tot <- sum(df[[col_l]], na.rm = TRUE)
+      val_tot <- sum(df[[col_v]], na.rm = TRUE)
+      
+      p_ini <- if (!is.na(ano_ini)) {
+        d1 <- df |> filter(ano == ano_ini)
+        v1 <- sum(d1[[col_l]], na.rm = TRUE); m1 <- sum(d1[[col_v]], na.rm = TRUE)
+        if (v1 > 0 && m1 > 0) m1 / v1 else NA_real_
+      } else NA_real_
+      
+      p_fim <- if (!is.na(ano_fim)) {
+        d2 <- df |> filter(ano == ano_fim)
+        v2 <- sum(d2[[col_l]], na.rm = TRUE); m2 <- sum(d2[[col_v]], na.rm = TRUE)
+        if (v2 > 0 && m2 > 0) m2 / v2 else NA_real_
+      } else NA_real_
+      
+      delta_pct <- if (!is.na(p_ini) && p_ini > 0 && !is.na(p_fim)) (p_fim / p_ini) - 1 else NA_real_
+      
+      tibble(
+        rotulo = emb_meta$rotulo[i],
+        vol = vol_tot,
+        val = val_tot,
+        preco = if_else(vol_tot > 0, val_tot / vol_tot, NA_real_),
+        delta_pct = delta_pct,
+        ano_ini = ano_ini,
+        ano_fim = ano_fim
+      )
+    })) |>
+      mutate(
+        pct_vol = if (sum(vol) > 0) vol / sum(vol) else 0,
+        pct_val = if (sum(val) > 0) val / sum(val) else 0
+      )
+  })
+  
+  output$cards_preco_emb_ui <- renderUI({
+    r <- resumo_emb()
+    validate(need(nrow(r) > 0 && sum(r$vol) > 0, "Sem dados de embalagem para o recorte atual."))
+    
+    div(
+      class = "emb-kpi-grid",
+      lapply(seq_len(nrow(r)), function(i) {
+        preco_txt <- if (is.na(r$preco[i])) "N/D" else paste0("R$ ", fmt_num(r$preco[i]), " / L")
+        delta_txt <- if (is.na(r$delta_pct[i])) {
+          "Variacao N/D"
+        } else {
+          sinal <- if (r$delta_pct[i] >= 0) "+" else ""
+          paste0("Δ ", sinal, fmt_pct(r$delta_pct[i], 0.1), " (", r$ano_ini[i], "–", r$ano_fim[i], ")")
+        }
+        cor_delta <- if (!is.na(r$delta_pct[i]) && r$delta_pct[i] >= 0) "#163a42" else "#ef5350"
+        
+        div(
+          class = "emb-kpi-card",
+          div(class = "emb-kpi-nome", r$rotulo[i]),
+          div(class = "emb-kpi-preco", preco_txt),
+          div(class = "emb-kpi-sub", style = paste0("color:", cor_delta, "; font-weight:600;"), delta_txt),
+          div(class = "emb-kpi-sub", paste0("Vol: ", fmt_pct(r$pct_vol[i]), " | Val: ", fmt_pct(r$pct_val[i])))
+        )
+      })
+    )
+  })
+  
+  dados_scatter_emb <- reactive({
+    req(input$anos, input$regiao, input$embalagem)
+    agua_clean |>
+      filter(
+        ano >= as.integer(input$anos[1]), ano <= as.integer(input$anos[2]),
+        input$regiao == "Todas" | regiao == input$regiao
+      ) |>
+      prepara_base(input$embalagem) |>
+      group_by(UF, regiao) |>
       summarise(vol = sum(vol_sel, na.rm = TRUE), val = sum(val_sel, na.rm = TRUE), .groups = "drop") |>
+      filter(vol > 0, val > 0) |>
+      mutate(vol_bi = vol / 1e9, preco = val / vol)
+  })
+  
+  output$nota_scatter <- renderUI({
+    df <- dados_scatter_emb()
+    req(nrow(df) >= 3)
+    uf_caro <- df$UF[which.max(df$preco)]
+    uf_barato <- df$UF[which.min(df$preco)]
+    uf_maior_vol <- df$UF[which.max(df$vol_bi)]
+    
+    div(class = "nota", paste0(
+      "Embalagem ativa: ", rotulo_emb(input$embalagem),
+      " | Maior volume: ", uf_maior_vol, " (", fmt_num(max(df$vol_bi)), " Bi L)",
+      " | Maior R$/L: ", uf_caro, " (R$ ", fmt_num(max(df$preco)), "/L)",
+      " | Menor R$/L: ", uf_barato, " (R$ ", fmt_num(min(df$preco)), "/L). ",
+      "Linhas tracejadas: volume mediano e preco medio ponderado."
+    ))
+  })
+  
+  output$scatter_uf <- renderPlotly({
+    df <- dados_scatter_emb()
+    validate(need(nrow(df) >= 3, "Poucas UFs com dados para este recorte."))
+    
+    preco_ref <- sum(df$val) / sum(df$vol)
+    vol_ref <- median(df$vol_bi)
+    
+    df <- df |>
+      mutate(
+        destaque = UF %in% c(UF[which.max(preco)], UF[which.min(preco)], UF[which.max(vol_bi)]),
+        hover = paste0(
+          UF, " (", regiao, ")",
+          "<br>Embalagem: ", rotulo_emb(input$embalagem),
+          "<br>Volume: ", fmt_num(vol_bi), " Bi L",
+          "<br>Valor: R$ ", fmt_num(val / 1e9), " Bi",
+          "<br>Preco medio: R$ ", fmt_num(preco), "/L"
+        )
+      )
+    
+    xmax <- max(df$vol_bi); xmin <- min(df$vol_bi)
+    ymax <- max(df$preco);  ymin <- min(df$preco)
+    desloc_y <- 0.04 * (ymax - ymin)
+    
+    p <- ggplot(df, aes(x = vol_bi, y = preco)) +
+      geom_vline(xintercept = vol_ref, linetype = "dashed", colour = "#94a3b8") +
+      geom_hline(yintercept = preco_ref, linetype = "dashed", colour = "#94a3b8") +
+      annotate("text", x = xmax, y = ymax * 1.05, label = "Maior volume e mais caro", hjust = 1, size = 3.1, colour = "#64748b", fontface = "italic") +
+      annotate("text", x = xmax, y = ymin * 0.95, label = "Maior volume e mais barato", hjust = 1, size = 3.1, colour = "#64748b", fontface = "italic") +
+      annotate("text", x = xmin, y = ymax * 1.05, label = "Menor volume e mais caro", hjust = 0, size = 3.1, colour = "#64748b", fontface = "italic") +
+      annotate("text", x = xmin, y = ymin * 0.95, label = "Barato e produz pouco", hjust = 0, size = 3.1, colour = "#64748b", fontface = "italic") +
+      geom_point(aes(fill = destaque, text = hover), shape = 21, size = 4.2, colour = "white", stroke = 0.6) +
+      geom_text(aes(label = UF, colour = destaque), size = 3.1, fontface = "bold", nudge_y = desloc_y) +
+      scale_fill_manual(values = c("FALSE" = "#94a3b8", "TRUE" = "#c0392b"), guide = "none") +
+      scale_colour_manual(values = c("FALSE" = "#334155", "TRUE" = "#c0392b"), guide = "none") +
+      scale_x_log10(labels = label_number(accuracy = 0.01, decimal.mark = ",")) +
+      scale_y_continuous(labels = label_number(prefix = "R$ ", accuracy = 0.01, decimal.mark = ",")) +
+      labs(x = "Volume produzido (Bi L, escala log)", y = "Preco medio (R$/L)") +
+      tema_base() +
+      theme(panel.grid.major.x = element_line(colour = "#e8efed", linewidth = 0.3))
+    
+    para_plotly(p)
+  })
+  
+  serie_preco_emb <- reactive({
+    df <- prepara_base(dados_filtrados(), "todas")
+    serie_raw <- bind_rows(lapply(seq_len(nrow(emb_meta)), function(i) {
+      df |>
+        group_by(ano) |>
+        summarise(
+          vol = sum(.data[[emb_meta$col_l[i]]], na.rm = TRUE),
+          val = sum(.data[[emb_meta$col_v[i]]], na.rm = TRUE),
+          .groups = "drop"
+        ) |>
+        mutate(rotulo = emb_meta$rotulo[i])
+    })) |>
       filter(vol > 0, val > 0) |>
       mutate(preco = val / vol)
     
-    if (!identical(input$uf, "Todas")) {
-      df_uf_ano <- df_uf_ano |> filter(UF == input$uf)
-    } else {
-      top_ufs <- df_uf_ano |>
-        group_by(UF) |>
-        summarise(vol_tot = sum(vol, na.rm = TRUE), .groups = "drop") |>
-        arrange(desc(vol_tot)) |>
-        slice_head(n = 8) |>
-        pull(UF)
-      df_uf_ano <- df_uf_ano |> filter(UF %in% top_ufs)
-    }
-    df_uf_ano
+    deltas <- serie_raw |>
+      group_by(rotulo) |>
+      summarise(
+        p_ini = preco[which.min(ano)],
+        p_fim = preco[which.max(ano)],
+        ano_ini = min(ano),
+        ano_fim = max(ano),
+        .groups = "drop"
+      ) |>
+      mutate(
+        delta_pct = if_else(!is.na(p_ini) & p_ini > 0, (p_fim / p_ini) - 1, NA_real_),
+        rotulo_delta = if_else(
+          is.na(delta_pct),
+          rotulo,
+          paste0(rotulo, " (", if_else(delta_pct >= 0, "+", ""), fmt_pct(delta_pct, 0.1), ")")
+        )
+      )
+    
+    serie_raw |>
+      left_join(deltas |> select(rotulo, delta_pct, rotulo_delta, ano_ini, ano_fim), by = "rotulo") |>
+      mutate(
+        rotulo_delta = factor(rotulo_delta, levels = deltas$rotulo_delta[match(emb_meta$rotulo, deltas$rotulo)]),
+        tip = paste0(
+          rotulo, " (", ano, "): R$ ", fmt_num(preco), "/L",
+          if_else(!is.na(delta_pct), paste0("<br>Variacao ", ano_ini, "–", ano_fim, ": ", if_else(delta_pct >= 0, "+", ""), fmt_pct(delta_pct, 0.1)), "")
+        )
+      )
   })
   
-  output$nota_preco_ano_uf <- renderUI({
-    txt <- if (!identical(input$uf, "Todas")) {
-      paste0("Exibindo UF selecionada: ", input$uf, ".")
-    } else {
-      "Exibindo as 8 UFs de maior volume no recorte (passe o mouse para ver cada estado)."
-    }
-    div(class = "nota", paste(txt, "Valores nominais (R$/L)."))
+  output$nota_preco_emb_ano <- renderUI({
+    s <- serie_preco_emb()
+    req(nrow(s) > 0)
+    d_res <- s |> distinct(rotulo, delta_pct) |> filter(!is.na(delta_pct)) |> arrange(desc(delta_pct))
+    destaque <- if (nrow(d_res) > 0) {
+      paste0("Maior alta nominal: ", d_res$rotulo[1], " (", if_else(d_res$delta_pct[1] >= 0, "+", ""), fmt_pct(d_res$delta_pct[1], 0.1), "). ")
+    } else ""
+    div(class = "nota", paste0(destaque, "Mesma escala vertical em todos os paineis. Valores nominais."))
   })
   
-  output$plot_preco_ano_uf <- renderPlotly({
-    d <- dados_preco_ano_uf()
-    validate(need(nrow(d) >= 2, "Sem dados suficientes para exibir o preco por ano e UF."))
+  output$plot_preco_emb_ano <- renderPlotly({
+    serie <- serie_preco_emb()
+    validate(need(n_distinct(serie$ano) >= 2, "Selecione pelo menos 2 anos para ver a evolucao."))
     
-    ano_min <- as.integer(min(d$ano))
-    ano_max <- as.integer(max(d$ano))
+    ult <- serie |> group_by(rotulo_delta) |> filter(ano == max(ano)) |> ungroup()
+    desloc <- 0.1 * max(serie$preco, na.rm = TRUE)
     
-    d <- d |>
-      mutate(tip = paste0(UF, " (", ano, "): R$ ", fmt_num(preco), "/L"))
-    
-    pal_uf <- c(
-      "#163a42", "#ef5350", "#10b981", "#2c7fb8",
-      "#d97706", "#7c3aed", "#0d9488", "#db2777"
-    )
-    
-    p <- ggplot(d, aes(x = ano, y = preco, colour = UF, group = UF)) +
-      geom_line(linewidth = 1.05, alpha = 0.9) +
-      geom_point(aes(text = tip), size = 1.8) +
-      scale_colour_manual(values = pal_uf) +
+    p <- ggplot(serie, aes(x = ano, y = preco)) +
+      geom_line(colour = cor_valor, linewidth = 1) +
+      geom_point(aes(text = tip), colour = cor_valor, size = 1.6) +
+      geom_point(data = ult, aes(text = tip), colour = cor_valor, size = 2.8) +
+      geom_text(data = ult, aes(label = paste0("R$ ", fmt_num(preco))), nudge_y = desloc, size = 3.2, fontface = "bold") +
+      facet_wrap(~rotulo_delta, nrow = 1) +
       scale_x_continuous(
-        breaks = seq(ano_min, ano_max, by = 1L),
-        labels = function(x) sprintf("%d", as.integer(x))
+        breaks = breaks_pretty(3),
+        labels = label_number(accuracy = 1, big.mark = ""),
+        expand = expansion(mult = c(0.05, 0.12))
       ) +
-      scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.12)),
-                         labels = label_number(prefix = "R$ ", accuracy = 0.1, decimal.mark = ",")) +
-      labs(x = NULL, y = "Preco medio (R$/L)") +
+      scale_y_continuous(
+        limits = c(0, NA),
+        expand = expansion(mult = c(0, 0.2)),
+        labels = label_number(prefix = "R$ ", accuracy = 0.1, decimal.mark = ",")
+      ) +
+      labs(x = NULL, y = NULL) +
       tema_base() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+      theme(strip.text = element_text(face = "bold", hjust = 0, colour = "#163a42", size = 9.5))
     
     para_plotly(p)
   })
+  
+  # =====================  ABA 3: ESTADOS E REGIOES  =====================
   
   dados_mapa_ano <- reactive({
     req(input$embalagem, input$regiao, input$uf)
@@ -843,190 +1020,6 @@ server <- function(input, output, session) {
       labs(x = NULL, y = NULL) +
       tema_base() +
       theme(panel.grid = element_blank(), axis.text.x = element_blank())
-    
-    para_plotly(p)
-  })
-  
-  # =====================  ABA 2: EMBALAGENS  =====================
-  resumo_emb <- reactive({
-    df <- prepara_base(dados_filtrados(), "todas")
-    bind_rows(lapply(seq_len(nrow(emb_meta)), function(i) {
-      tibble(
-        rotulo = emb_meta$rotulo[i],
-        vol = sum(df[[emb_meta$col_l[i]]], na.rm = TRUE),
-        val = sum(df[[emb_meta$col_v[i]]], na.rm = TRUE)
-      )
-    })) |>
-      mutate(
-        preco = if_else(vol > 0, val / vol, NA_real_),
-        pct_vol = if (sum(vol) > 0) vol / sum(vol) else 0,
-        pct_val = if (sum(val) > 0) val / sum(val) else 0
-      )
-  })
-  
-  output$nota_preco_emb <- renderUI({
-    r <- resumo_emb() |> filter(vol > 0, val > 0)
-    req(nrow(r) > 0)
-    preco_ref <- sum(r$val) / sum(r$vol)
-    div(class = "nota", paste0("Linha tracejada: media das embalagens (R$ ", fmt_num(preco_ref), "/L)."))
-  })
-  
-  output$plot_preco_emb <- renderPlotly({
-    r <- resumo_emb() |> filter(vol > 0, val > 0)
-    validate(need(nrow(r) > 0, "Sem dados de embalagem para os filtros atuais."))
-    preco_ref <- sum(r$val) / sum(r$vol)
-    r <- r |>
-      mutate(
-        tip = paste0(rotulo, ": R$ ", fmt_num(preco), "/L<br>",
-                     fmt_pct(pct_vol), " do volume | ", fmt_pct(pct_val), " do valor"),
-        lab = paste0("R$ ", fmt_num(preco), "/L (", fmt_pct(pct_vol, 0), " do volume)")
-      )
-    
-    p <- ggplot(r, aes(x = preco, y = reorder(rotulo, preco))) +
-      geom_col(aes(text = tip), fill = "#1c444d", width = 0.65) +
-      geom_vline(xintercept = preco_ref, linetype = "dashed", colour = cor_neutra) +
-      geom_text(aes(label = lab), hjust = 0, nudge_x = 0.02 * max(r$preco), size = 3.5,
-                fontface = "bold", colour = "#0f172a") +
-      scale_x_continuous(expand = expansion(mult = c(0, 0.75))) +
-      labs(x = NULL, y = NULL) +
-      tema_base() +
-      theme(panel.grid = element_blank(), axis.text.x = element_blank())
-    
-    para_plotly(p)
-  })
-  
-  dados_scatter_emb <- reactive({
-    req(input$anos, input$regiao, input$embalagem)
-    agua_clean |>
-      filter(ano >= as.integer(input$anos[1]), ano <= as.integer(input$anos[2]),
-             input$regiao == "Todas" | regiao == input$regiao) |>
-      prepara_base(input$embalagem) |>
-      group_by(UF, regiao) |>
-      summarise(vol = sum(vol_sel, na.rm = TRUE), val = sum(val_sel, na.rm = TRUE), .groups = "drop") |>
-      filter(vol > 0, val > 0) |>
-      mutate(vol_bi = vol / 1e9, preco = val / vol)
-  })
-  
-  output$nota_scatter <- renderUI({
-    df <- dados_scatter_emb()
-    req(nrow(df) >= 3)
-    preco_ref <- sum(df$val) / sum(df$vol)
-    div(class = "nota", paste0(
-      "Tracejado: preco medio (R$ ", fmt_num(preco_ref), "/L) e volume mediano. ",
-      "Em vermelho: maior volume, maior R$/L e menor R$/L."
-    ))
-  })
-  
-  output$scatter_uf <- renderPlotly({
-    df <- dados_scatter_emb()
-    validate(need(nrow(df) >= 3, "Poucas UFs com dados para este recorte."))
-    
-    preco_ref <- sum(df$val) / sum(df$vol)
-    vol_ref <- median(df$vol_bi)
-    df <- df |>
-      mutate(
-        destaque = UF %in% c(UF[which.max(preco)], UF[which.min(preco)], UF[which.max(vol_bi)]),
-        hover = paste0(UF, " (", regiao, ")",
-                       "<br>Volume: ", fmt_num(vol_bi), " Bi L",
-                       "<br>Valor: R$ ", fmt_num(val / 1e9), " Bi",
-                       "<br>Preco medio: R$ ", fmt_num(preco), "/L")
-      )
-    
-    xmax <- max(df$vol_bi); xmin <- min(df$vol_bi)
-    ymax <- max(df$preco);  ymin <- min(df$preco)
-    desloc_y <- 0.04 * (ymax - ymin)
-    
-    p <- ggplot(df, aes(x = vol_bi, y = preco)) +
-      geom_vline(xintercept = vol_ref, linetype = "dashed", colour = "#94a3b8") +
-      geom_hline(yintercept = preco_ref, linetype = "dashed", colour = "#94a3b8") +
-      annotate("text", x = xmax, y = ymax * 1.05, label = "Grande e caro",    hjust = 1, size = 3.2, colour = "#94a3b8", fontface = "italic") +
-      annotate("text", x = xmax, y = ymin * 0.95, label = "Grande e barato",  hjust = 1, size = 3.2, colour = "#94a3b8", fontface = "italic") +
-      annotate("text", x = xmin, y = ymax * 1.05, label = "Pequeno e caro",   hjust = 0, size = 3.2, colour = "#94a3b8", fontface = "italic") +
-      annotate("text", x = xmin, y = ymin * 0.95, label = "Pequeno e barato", hjust = 0, size = 3.2, colour = "#94a3b8", fontface = "italic") +
-      geom_point(aes(fill = destaque, text = hover), shape = 21, size = 4, colour = "white", stroke = 0.6) +
-      geom_text(aes(label = UF, colour = destaque), size = 3.1, fontface = "bold", nudge_y = desloc_y) +
-      scale_fill_manual(values = c("FALSE" = "#94a3b8", "TRUE" = "#c0392b"), guide = "none") +
-      scale_colour_manual(values = c("FALSE" = "#334155", "TRUE" = "#c0392b"), guide = "none") +
-      scale_x_log10(labels = label_number(accuracy = 0.01, decimal.mark = ",")) +
-      scale_y_continuous(labels = label_number(prefix = "R$ ", accuracy = 0.01, decimal.mark = ",")) +
-      labs(x = "Volume produzido (Bi L, escala log)", y = "Preco medio (R$/L)") +
-      tema_base() +
-      theme(panel.grid.major.x = element_line(colour = "#e8efed", linewidth = 0.3))
-    
-    para_plotly(p)
-  })
-  
-  output$cards_embalagens_html <- renderUI({
-    req(input$metrica)
-    r <- resumo_emb()
-    validate(need(sum(r$vol) > 0 && sum(r$val) > 0, "Sem dados positivos para os filtros selecionados."))
-    
-    cfg_picto <- tibble(
-      rotulo = c("Garrafao", "Garrafa plastica", "Garrafa de vidro", "Copo", "Outros"),
-      nome_card = c("Garrafao", "Garrafa Plastica", "Garrafa de Vidro", "Copo", "Outros"),
-      icone = c(
-        "fa-solid fa-bottle-water",
-        "fa-solid fa-bottle-water",
-        "fa-solid fa-bottle-droplet",
-        "fa-solid fa-glass-water",
-        "fa-solid fa-box-open"
-      ),
-      px = c(56L, 50L, 48L, 48L, 46L)
-    )
-    
-    tab <- cfg_picto |>
-      left_join(r, by = "rotulo") |>
-      mutate(
-        pct_vol = replace_na(pct_vol, 0),
-        pct_val = replace_na(pct_val, 0)
-      )
-    
-    div(
-      class = "picto-grid",
-      lapply(seq_len(nrow(tab)), function(i) {
-        card_embalagem_html(
-          nome       = tab$nome_card[i],
-          icone      = tab$icone[i],
-          tamanho_px = tab$px[i],
-          pct_vol    = tab$pct_vol[i],
-          pct_val    = tab$pct_val[i],
-          metrica    = input$metrica
-        )
-      })
-    )
-  })
-  
-  output$plot_preco_emb_ano <- renderPlotly({
-    df <- prepara_base(dados_filtrados(), "todas")
-    serie <- bind_rows(lapply(seq_len(nrow(emb_meta)), function(i) {
-      df |>
-        group_by(ano) |>
-        summarise(vol = sum(.data[[emb_meta$col_l[i]]], na.rm = TRUE),
-                  val = sum(.data[[emb_meta$col_v[i]]], na.rm = TRUE), .groups = "drop") |>
-        mutate(rotulo = emb_meta$rotulo[i])
-    })) |>
-      filter(vol > 0, val > 0) |>
-      mutate(preco = val / vol,
-             rotulo = factor(rotulo, levels = emb_meta$rotulo),
-             tip = paste0(rotulo, " ", ano, ": R$ ", fmt_num(preco), "/L"))
-    
-    validate(need(n_distinct(serie$ano) >= 2, "Selecione pelo menos 2 anos para ver a evolucao."))
-    ult <- serie |> group_by(rotulo) |> filter(ano == max(ano)) |> ungroup()
-    desloc <- 0.1 * max(serie$preco)
-    
-    p <- ggplot(serie, aes(x = ano, y = preco)) +
-      geom_line(colour = cor_valor, linewidth = 1) +
-      geom_point(aes(text = tip), colour = cor_valor, size = 1.6) +
-      geom_point(data = ult, aes(text = tip), colour = cor_valor, size = 2.8) +
-      geom_text(data = ult, aes(label = paste0("R$ ", fmt_num(preco))), nudge_y = desloc, size = 3.3, fontface = "bold") +
-      facet_wrap(~rotulo, nrow = 1) +
-      scale_x_continuous(breaks = breaks_pretty(3), labels = label_number(accuracy = 1, big.mark = ""),
-                         expand = expansion(mult = c(0.05, 0.12))) +
-      scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.2)),
-                         labels = label_number(prefix = "R$ ", accuracy = 0.1, decimal.mark = ",")) +
-      labs(x = NULL, y = NULL) +
-      tema_base() +
-      theme(strip.text = element_text(face = "bold", hjust = 0, colour = "#163a42"))
     
     para_plotly(p)
   })
