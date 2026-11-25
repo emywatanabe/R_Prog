@@ -216,8 +216,7 @@ parse_br_num <- function(x) {
   as.numeric(gsub(",", ".", as.character(x), fixed = TRUE))
 }
 
-caminho_csv <- "CE303 - visualizacao/Agua_Mineral_Producao.csv"
-if (!file.exists(caminho_csv)) caminho_csv <- "Agua_Mineral_Producao.csv"
+caminho_csv <- "https://raw.githubusercontent.com/emywatanabe/R_Prog/main/CE303%20-%20visualiza%C3%A7%C3%A3o/Agua_Mineral_Producao.csv"
 
 agua_raw <- read.csv(
   caminho_csv,
