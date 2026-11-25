@@ -178,7 +178,7 @@ server <- function(input, output, session) {
       anim <- animate(
         grafico_atual,
         nframes = length(unique(anim_dados_atual$etapa)) * 4,
-        fps = 20,
+        fps = 10,
         width = 650,
         height = 500,
         end_pause = 20,
