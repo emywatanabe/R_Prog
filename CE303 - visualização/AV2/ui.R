@@ -8,7 +8,7 @@ sidebar <- dashboardSidebar(
   div(
     class = "sidebar-sobre",
     tags$strong("Sobre"),
-    "Painel exploratório da produção comercializada de água mineral no Brasil (2010\u20132025), com base no Anuário Mineral Brasileiro (ANM). Os indicadores consideram água embalada (5 formatos) em valores nominais."
+    "Painel da produção do período de 2010–2025 do comércio de água mineral em diferentes tipos de embalagens no Brasil"
   ),
   sidebarMenu(
     id = "abas",
@@ -17,9 +17,19 @@ sidebar <- dashboardSidebar(
     menuItem("Estados e Regiões", tabName = "estados", icon = icon("map"))
   ),
   hr(),
-  uiOutput("ui_anos"),
+  # Abas 1 e 2: período. Aba 3: um único ano (mapa e ranking)
+  conditionalPanel("input.abas != 'estados'", uiOutput("ui_anos")),
+  conditionalPanel(
+    "input.abas == 'estados'",
+    selectInput(
+      "ano_mapa", "Ano (mapa e ranking)",
+      choices = sort(unique(agua_clean$ano), decreasing = TRUE),
+      selected = max(agua_clean$ano, na.rm = TRUE)
+    )
+  ),
   uiOutput("ui_regiao"),
-  uiOutput("ui_uf"),
+  # A UF só se aplica às abas 1 e 2 (mapa e ranking mostram todas as UFs)
+  conditionalPanel("input.abas != 'estados'", uiOutput("ui_uf")),
   selectInput(
     "embalagem",
     "Tipo de embalagem",
@@ -54,10 +64,23 @@ estilos_css <- "
     letter-spacing: 0.4px; margin-bottom: 4px;
   }
 
+  /* Barra lateral fixa com rolagem propria: todos os filtros ficam acessiveis em telas baixas */
+  .main-sidebar { overflow-y: auto !important; overflow-x: hidden; }
+  .main-sidebar .sidebar { height: auto !important; max-height: none !important; overflow: visible !important; padding-bottom: 40px; }
+  .main-sidebar .slimScrollDiv { height: auto !important; overflow: visible !important; }
+  .main-sidebar .slimScrollBar, .main-sidebar .slimScrollRail { display: none !important; }
+  .main-sidebar .form-group { margin-bottom: 8px; }
+  .main-sidebar .selectize-dropdown { z-index: 2000; }
+
   /* Barra lateral sempre visivel no desktop: sem o botao de menu (no celular ele continua, senao a barra não abre) */
   @média (min-width: 768px) {
     .main-header .sidebar-toggle { display: none !important; }
   }
+
+  /* Título de cada aba */
+  .titulo-aba { margin: 0 4px 12px 4px; padding-bottom: 8px; border-bottom: 1px solid #cfe0db; }
+  .titulo-aba h3 { margin: 0 0 4px 0; font-size: 24px; font-weight: 700; color: #163a42; }
+  .titulo-aba p { margin: 0; font-size: 14px; color: #475569; }
 
   /* Tufte: sem molduras, sombras ou fundos decorativos nos paineis */
   .box {
@@ -101,6 +124,7 @@ body <- dashboardBody(
     # ABA 1: Contexto Historico
     tabItem(
       tabName = "contexto",
+      div(class = "titulo-aba", tags$h3("Contexto Histórico: volume, valor e preço do litro (2010–2025)"), tags$p("O valor cresceu mais que o volume? Os indicadores e gráficos respeitam o período, a região e a UF escolhidos na barra lateral.")),
       fluidRow(column(width = 12, uiOutput("kpis_ui"))),
       fluidRow(
         box(
@@ -123,6 +147,7 @@ body <- dashboardBody(
     # ABA 2: Embalagens
     tabItem(
       tabName = "embalagens",
+      div(class = "titulo-aba", tags$h3("Embalagens: o formato da garrafa explica o preço do litro"), tags$p("Compare o preço por litro entre garrafão, garrafa plástica, vidro, copo e outros, e veja como cada UF se posiciona.")),
       fluidRow(
         box(
           title = "Resumo do preço por litro por embalagem (R$/L)",
@@ -152,12 +177,12 @@ body <- dashboardBody(
     # ABA 3: Estados e Regioes (ano e metrica valem para o mapa e para o ranking)
     tabItem(
       tabName = "estados",
+      div(class = "titulo-aba", tags$h3("Estados e Regiões: onde se produz e quanto vale cada litro"), tags$p("Escolha o ano e a métrica para ver o mapa e o ranking das maiores UFs, com a concentração acumulada.")),
       fluidRow(
         column(
           width = 12,
           div(
             class = "controles-mapa",
-            uiOutput("ui_ano_mapa"),
             radioButtons(
               "metrica_mapa",
               "Exibir no mapa:",

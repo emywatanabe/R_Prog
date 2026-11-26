@@ -36,20 +36,6 @@ server <- function(input, output, session) {
     selectInput("uf", "UF", choices = c("Todas", ufs), selected = selecionada)
   })
 
-  # O ano do mapa/ranking so depende do periodo; a escolha do usuario e mantida ao mudar regiao/UF
-  output$ui_ano_mapa <- renderUI({
-    req(input$anos)
-    anos_disp <- seq(as.integer(input$anos[2]), as.integer(input$anos[1]), by = -1L)
-    atual <- isolate(input$ano_mapa)
-    selecionado <- if (!is.null(atual) && as.character(atual) %in% as.character(anos_disp)) {
-      as.character(atual)
-    } else {
-      as.character(anos_disp[1])
-    }
-    selectInput("ano_mapa", "Ano do mapa e do ranking", choices = anos_disp,
-                selected = selecionado, width = "190px")
-  })
-
   ano_mapa_sel <- reactive({
     a <- suppressWarnings(as.integer(input$ano_mapa))
     if (length(a) == 1 && !is.na(a)) a else max(agua_clean$ano, na.rm = TRUE)
@@ -533,12 +519,11 @@ server <- function(input, output, session) {
   # ABA 3: ESTADOS E REGIOES (mapa e ranking usam o mesmo ano e a mesma metrica)
   # ===========================================================================
   dados_mapa_ano <- reactive({
-    req(input$embalagem, input$regiao, input$uf)
+    req(input$embalagem, input$regiao)
     agua_clean |>
       filter(
         ano == ano_mapa_sel(),
-        input$regiao == "Todas" | regiao == input$regiao,
-        input$uf == "Todas" | UF == input$uf
+        input$regiao == "Todas" | regiao == input$regiao
       ) |>
       prepara_base(input$embalagem) |>
       group_by(UF) |>
@@ -566,7 +551,7 @@ server <- function(input, output, session) {
   })
 
   output$mapa_estatico <- renderPlotly({
-    req(input$metrica_mapa, input$regiao, input$uf)
+    req(input$metrica_mapa, input$regiao)
     df_uf <- dados_mapa_ano()
     reg_uf <- agua_clean |> select(UF, regiao) |> distinct()
 
@@ -576,7 +561,6 @@ server <- function(input, output, session) {
       left_join(centroides_mapa, by = "UF")
 
     if (!identical(input$regiao, "Todas")) base_uf <- base_uf |> filter(regiao == input$regiao)
-    if (!identical(input$uf, "Todas")) base_uf <- base_uf |> filter(UF == input$uf)
     validate(need(nrow(base_uf) > 0, "Sem estados para os filtros selecionados."))
 
     base_uf$valor_mapa <- switch(
