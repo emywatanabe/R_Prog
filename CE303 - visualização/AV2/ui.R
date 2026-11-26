@@ -2,13 +2,23 @@
 # ui.R -- interface (usa objetos definidos em global.R)
 # =====================================================================================
 
-header <- dashboardHeader(title = "Água Mineral (2010-2025)")
+header <- dashboardHeader(
+  title = "",
+  tags$li(
+    class = "dropdown nav-abas",
+    actionButton("nav_contexto", tagList(icon("clock-rotate-left"), " Contexto Histórico"), class = "top-tab-btn active"),
+    actionButton("nav_embalagens", tagList(icon("bottle-water"), " Embalagens"), class = "top-tab-btn"),
+    actionButton("nav_estados", tagList(icon("map"), " Estados e Regiões"), class = "top-tab-btn")
+  )
+)
 
 sidebar <- dashboardSidebar(
   div(
     class = "sidebar-sobre",
+    tags$h4(class = "sidebar-titulo", "Produção e comércio de água mineral no Brasil"),
+    tags$div(class = "sidebar-autor", "Emily Yamagutti Watanabe"),
     tags$strong("Sobre"),
-    "Painel da produção do período de 2010–2025 do comércio de água mineral em diferentes tipos de embalagens no Brasil"
+    "Painel da produção do período de 2010–2025 do comércio de água mineral em diferentes embalagens no Brasil. Exploração da evolução de volume e faturamento, as diferenças de preço (R$/L) entre estados e por tipo de embalagem."
   ),
   sidebarMenu(
     id = "abas",
@@ -16,7 +26,6 @@ sidebar <- dashboardSidebar(
     menuItem("Embalagens", tabName = "embalagens", icon = icon("bottle-water")),
     menuItem("Estados e Regiões", tabName = "estados", icon = icon("map"))
   ),
-  hr(),
   # Abas 1 e 2: período. Aba 3: um único ano (mapa e ranking)
   conditionalPanel("input.abas != 'estados'", uiOutput("ui_anos")),
   conditionalPanel(
@@ -52,6 +61,21 @@ estilos_css <- "
     background-color: #265965 !important; color: #ffffff !important; border-left-color: #10b981 !important;
   }
   .main-sidebar hr { border-top-color: rgba(255, 255, 255, 0.14); }
+
+  /* Abas na barra superior; o logo some e a barra ocupa toda a largura */
+  .main-header .logo { display: none !important; }
+  .main-header .navbar { margin-left: 0 !important; }
+  .main-header .navbar-custom-menu { float: left !important; }
+  .main-header .navbar-custom-menu > .navbar-nav > li { float: left; }
+  .top-tab-btn { background: transparent !important; border: none !important; border-radius: 0 !important; box-shadow: none !important;
+    height: 50px; padding: 0 20px; font-size: 16px; font-weight: 600; color: #163a42 !important; border-bottom: 3px solid transparent !important; }
+  .top-tab-btn:hover { background-color: #c5e6de !important; }
+  .top-tab-btn.active { border-bottom-color: #10b981 !important; background-color: #c5e6de !important; }
+  .sidebar-menu { display: none; }   /* menu lateral oculto: so serve de controle das abas */
+
+  /* Titulo e autor na barra lateral */
+  .sidebar-titulo { margin: 0 0 4px 0; font-size: 18px; font-weight: 700; color: #ffffff; line-height: 1.25; }
+  .sidebar-autor { margin-bottom: 10px; font-size: 13px; color: #a9c9c2; }
 
   /* Bloco Sobre no topo da barra lateral */
   .sidebar-sobre {
@@ -118,7 +142,13 @@ body <- dashboardBody(
   tags$head(
     tags$style(HTML(estilos_css)),
     # Layout "fixed" do AdminLTE: cabecalho e barra lateral ficam fixos ao rolar a pagina
-    tags$script(HTML("$(function(){ $('body').addClass('fixed'); });"))
+    tags$script(HTML("
+      $(function(){ $('body').addClass('fixed'); });
+      $(document).on('click', '.top-tab-btn', function() {
+        $('.top-tab-btn').removeClass('active');
+        $(this).addClass('active');
+      });
+    "))
   ),
   tabItems(
     # ABA 1: Contexto Historico
@@ -136,7 +166,7 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Preço médio por litro (R$/L) por ano e por UF (dispersão bruta da base)",
+          title = "Preço médio por litro (R$/L) por ano e por UF",
           width = 12,
           plotlyOutput("dotplot_preco_ano_uf", height = "430px"),
           uiOutput("nota_dotplot_preco_ano_uf")
@@ -147,7 +177,6 @@ body <- dashboardBody(
     # ABA 2: Embalagens
     tabItem(
       tabName = "embalagens",
-      div(class = "titulo-aba", tags$h3("Embalagens: o formato da garrafa explica o preço do litro"), tags$p("Compare o preço por litro entre garrafão, garrafa plástica, vidro, copo e outros, e veja como cada UF se posiciona.")),
       fluidRow(
         box(
           title = "Resumo do preço por litro por embalagem (R$/L)",
@@ -158,7 +187,7 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Dispersão volume x R$/litro por UF (decisao por mercado e embalagem)",
+          title = "Dispersão volume x R$/litro por UF",
           width = 12,
           plotlyOutput("scatter_uf", height = "430px"),
           uiOutput("nota_scatter")
@@ -166,7 +195,7 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Evolução do preço por litro por embalagem (R$/L) e variação percentual (Δ%)",
+          title = "Evolução do preço por litro por embalagem (R$/L) e variação percentual (%)",
           width = 12,
           plotlyOutput("plot_preco_emb_ano", height = "300px"),
           uiOutput("nota_preco_emb_ano")

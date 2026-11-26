@@ -5,6 +5,13 @@
 server <- function(input, output, session) {
 
   # ---------------------------------------------------------------------------
+  # Abas na barra superior: cada botao troca a aba do menu lateral (oculto)
+  # ---------------------------------------------------------------------------
+  observeEvent(input$nav_contexto,   { updateTabItems(session, "abas", "contexto") })
+  observeEvent(input$nav_embalagens, { updateTabItems(session, "abas", "embalagens") })
+  observeEvent(input$nav_estados,    { updateTabItems(session, "abas", "estados") })
+
+  # ---------------------------------------------------------------------------
   # Filtros da barra lateral
   # ---------------------------------------------------------------------------
   output$ui_anos <- renderUI({
