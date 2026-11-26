@@ -19,7 +19,15 @@ library(sf)
 # =====================================================================================
 
 # ---------- 1. Interface (UI) ----------
-header <- dashboardHeader(title = "Agua Mineral (2010-2025)")
+header <- dashboardHeader(
+  title = HTML(
+    '<div style="line-height:1.15; padding-top:6px; text-align:left;">
+       <div style="font-size:15px; font-weight:700;">Agua Mineral (2010–2025)</div>
+       <div style="font-size:11px; font-weight:400; color:#d7e8e4;">Emily Watanabe</div>
+     </div>'
+  ),
+  titleWidth = 320
+)
 
 emb_cols_all <- c(
   "Garrafao" = "garrafao_l",
@@ -31,6 +39,11 @@ emb_cols_all <- c(
 )
 
 sidebar <- dashboardSidebar(
+  div(
+    class = "sidebar-sobre",
+    tags$strong("Sobre"),
+    "Painel exploratorio da producao comercializada de agua mineral no Brasil (2010–2025), com base no Anuario Mineral Brasileiro (ANM). Os indicadores consideram agua embalada (5 formatos) em valores nominais."
+  ),
   sidebarMenu(
     id = "abas",
     menuItem("Contexto Historico", tabName = "contexto", icon = icon("clock-rotate-left"), selected = TRUE),
@@ -60,7 +73,40 @@ sidebar <- dashboardSidebar(
 
 body <- dashboardBody(
   tags$head(
-    tags$style(HTML("
+    tags$style(HTML("... seu CSS ...")),
+    tags$script(HTML("$(function(){ $('body').addClass('fixed'); });"))
+  ),("
+    
+          .sidebar-sobre {
+  margin: 12px 15px 8px 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 14px;
+  line-height: 1.45;
+  color: #cfe0db;
+  white-space: normal;
+}
+.sidebar-sobre strong {
+  display: block;
+  color: #ffffff;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+/* esconde o botao de menu so no desktop; no celular ele continua, senao a barra nao abre */
+@media (min-width: 768px) {
+  .main-header .sidebar-toggle { display: none !important; }
+}
+  .content-wrapper, .right-side, .main-footer {
+    margin-left: 230px;
+  }
+  .sidebar-collapse .content-wrapper,
+  .sidebar-collapse .right-side,
+  .sidebar-collapse .main-footer {
+    margin-left: 0;
+  }
+}
       .content-wrapper, .right-side { background-color: #fbfdfc !important; }
       .main-header .logo { background-color: #163a42 !important; color: #ffffff !important; font-weight: 600; }
       .main-header .logo:hover { background-color: #123037 !important; }
@@ -80,7 +126,7 @@ body <- dashboardBody(
         background-color: transparent !important; border: none !important;
         border-top: 1px solid #cfe0db !important; border-radius: 0 !important; box-shadow: none !important;
       }
-      .box-header .box-title { color: #163a42 !important; font-weight: 600; font-size: 15px; }
+      .box-header .box-title { color: #163a42 !important; font-weight: 600; font-size: 18px; }
 
       /* Indicadores como texto (numero grande + rotulo), sem caixa colorida */
       .kpi-row { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 6px 4px 14px 4px; border-bottom: 1px solid #cfe0db; margin-bottom: 14px; }
@@ -115,16 +161,18 @@ body <- dashboardBody(
 
       .rodape-fonte { margin-top: 6px; padding: 8px 12px; font-size: 12px; color: #334155; border-top: 1px solid #cde0da; }
       .rodape-fonte a { color: #163a42; font-weight: 600; text-decoration: underline; }
+      
+
     "))
   ),
   tabItems(
-    # ABA 1: Contexto Historico (Visao Geral)
+    # ABA 1: Contexto Histórico (Visão Geral)
     tabItem(
       tabName = "contexto",
       fluidRow(column(width = 12, uiOutput("resumo_mapa_ui"))),
       fluidRow(
         box(
-          title = "Producao ao longo do tempo: Volume (Bi L) x Valor (R$ Bi)",
+          title = "Produção ao longo do tempo: Volume (Bi L) x Valor (R$ Bi)",
           width = 12,
           plotlyOutput("plot_vol_val_tempo", height = "360px"),
           uiOutput("nota_vol_val_tempo")
@@ -132,7 +180,7 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Preco medio por litro (R$/L) por ano e por UF (dispersao bruta da base)",
+          title = "Preco médio por litro (R$/L) por ano e por UF (dispersão bruta da base)",
           width = 12,
           plotlyOutput("dotplot_preco_ano_uf", height = "430px"),
           uiOutput("nota_dotplot_preco_ano_uf")
@@ -197,7 +245,7 @@ body <- dashboardBody(
         box(
           title = "Ranking das 10 maiores UFs e concentracao acumulada",
           width = 6,
-          plotlyOutput("plot_top10_uf", height = "525px"),
+          plotOutput("plot_top10_uf", height = "525px"),
           uiOutput("nota_top10_uf")
         )
       )
@@ -1008,21 +1056,29 @@ server <- function(input, output, session) {
     ))
   })
   
-  output$plot_top10_uf <- renderPlotly({
+  output$plot_top10_uf <- renderPlot({
     d <- dados_top10_uf()
     validate(need(nrow(d) > 0, "Sem UFs com dados para o recorte selecionado."))
     
-    p <- ggplot(d, aes(x = medida_b, y = UF_ord)) +
-      geom_col(aes(text = tip), fill = "#1c444d", width = 0.68) +
-      geom_text(aes(label = rotulo_barra), hjust = 0, nudge_x = 0.015 * max(d$medida_b),
-                size = 3.2, fontface = "bold", colour = "#0f172a") +
-      scale_x_continuous(expand = expansion(mult = c(0, 0.55))) +
+    ggplot(d, aes(x = medida_b, y = UF_ord)) +
+      geom_col(fill = "#1c444d", width = 0.68) +
+      geom_text(
+        aes(label = rotulo_barra),
+        hjust = 0,
+        nudge_x = 0.015 * max(d$medida_b),
+        size = 5,
+        fontface = "bold",
+        colour = "#0f172a"
+      ) +
+      scale_x_continuous(expand = expansion(mult = c(0, 0.58))) +
       labs(x = NULL, y = NULL) +
       tema_base() +
-      theme(panel.grid = element_blank(), axis.text.x = element_blank())
-    
-    para_plotly(p)
-  })
+      theme(
+        panel.grid = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(face = "bold", size = 14, colour = "#0f172a")
+      )
+  }, bg = "transparent")
 }
 
 shinyApp(ui, server)
