@@ -2,19 +2,19 @@
 # ui.R -- interface (usa objetos definidos em global.R)
 # =====================================================================================
 
-header <- dashboardHeader(title = "Agua Mineral (2010-2025)")
+header <- dashboardHeader(title = "Água Mineral (2010-2025)")
 
 sidebar <- dashboardSidebar(
   div(
     class = "sidebar-sobre",
     tags$strong("Sobre"),
-    "Painel exploratorio da producao comercializada de agua mineral no Brasil (2010\u20132025), com base no Anuario Mineral Brasileiro (ANM). Os indicadores consideram agua embalada (5 formatos) em valores nominais."
+    "Painel exploratório da produção comercializada de água mineral no Brasil (2010\u20132025), com base no Anuário Mineral Brasileiro (ANM). Os indicadores consideram água embalada (5 formatos) em valores nominais."
   ),
   sidebarMenu(
     id = "abas",
-    menuItem("Contexto Historico", tabName = "contexto", icon = icon("clock-rotate-left"), selected = TRUE),
+    menuItem("Contexto Histórico", tabName = "contexto", icon = icon("clock-rotate-left"), selected = TRUE),
     menuItem("Embalagens", tabName = "embalagens", icon = icon("bottle-water")),
-    menuItem("Estados e Regioes", tabName = "estados", icon = icon("map"))
+    menuItem("Estados e Regiões", tabName = "estados", icon = icon("map"))
   ),
   hr(),
   uiOutput("ui_anos"),
@@ -54,8 +54,8 @@ estilos_css <- "
     letter-spacing: 0.4px; margin-bottom: 4px;
   }
 
-  /* Barra lateral sempre visivel no desktop: sem o botao de menu (no celular ele continua, senao a barra nao abre) */
-  @media (min-width: 768px) {
+  /* Barra lateral sempre visivel no desktop: sem o botao de menu (no celular ele continua, senao a barra não abre) */
+  @média (min-width: 768px) {
     .main-header .sidebar-toggle { display: none !important; }
   }
 
@@ -66,7 +66,7 @@ estilos_css <- "
   }
   .box-header .box-title { color: #163a42 !important; font-weight: 600; font-size: 18px; }
 
-  /* Indicadores como texto (numero grande + rotulo), sem caixa colorida */
+  /* Indicadores como texto (número grande + rotulo), sem caixa colorida */
   .kpi-row { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 6px 4px 14px 4px; border-bottom: 1px solid #cfe0db; margin-bottom: 14px; }
   .kpi { min-width: 155px; }
   .kpi-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; color: #475569; }
@@ -78,13 +78,13 @@ estilos_css <- "
 
   /* Cards de R$/L por embalagem no padrao Tufte */
   .emb-kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; padding: 4px 0; }
-  @media (max-width: 992px) { .emb-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @média (max-width: 992px) { .emb-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .emb-kpi-card { border-top: 2px solid #163a42; padding: 8px 6px 4px 6px; }
   .emb-kpi-nome { font-size: 12px; font-weight: 600; color: #163a42; text-transform: uppercase; letter-spacing: 0.3px; }
-  .emb-kpi-preco { font-size: 22px; font-weight: 700; color: #0f172a; margin: 2px 0; }
+  .emb-kpi-preço { font-size: 22px; font-weight: 700; color: #0f172a; margin: 2px 0; }
   .emb-kpi-sub { font-size: 12px; color: #475569; }
 
-  /* Notas sob os graficos (substituem subtitulo/legenda, que o plotly nao exibe) */
+  /* Notas sob os graficos (substituem subtitulo/legenda, que o plotly não exibe) */
   .nota { font-size: 12px; color: #475569; margin: 4px 6px 0 6px; }
 
   .rodape-fonte { margin-top: 6px; padding: 8px 12px; font-size: 12px; color: #334155; border-top: 1px solid #cde0da; }
@@ -104,7 +104,7 @@ body <- dashboardBody(
       fluidRow(column(width = 12, uiOutput("kpis_ui"))),
       fluidRow(
         box(
-          title = "Producao ao longo do tempo: Volume (Bi L) x Valor (R$ Bi)",
+          title = "Produção ao longo do tempo: Volume (Bi L) x Valor (R$ Bi)",
           width = 12,
           plotlyOutput("plot_vol_val_tempo", height = "360px"),
           uiOutput("nota_vol_val_tempo")
@@ -112,7 +112,7 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Preco medio por litro (R$/L) por ano e por UF (dispersao bruta da base)",
+          title = "Preço médio por litro (R$/L) por ano e por UF (dispersão bruta da base)",
           width = 12,
           plotlyOutput("dotplot_preco_ano_uf", height = "430px"),
           uiOutput("nota_dotplot_preco_ano_uf")
@@ -125,15 +125,15 @@ body <- dashboardBody(
       tabName = "embalagens",
       fluidRow(
         box(
-          title = "Resumo do preco por litro por embalagem (R$/L)",
+          title = "Resumo do preço por litro por embalagem (R$/L)",
           width = 12,
           uiOutput("cards_preco_emb_ui"),
-          div(class = "nota", "Preco medio ponderado (Valor / Volume) e variacao percentual (Δ%) entre o ano inicial e final do filtro.")
+          div(class = "nota", "Preço médio ponderado (Valor / Volume) e variação percentual (Δ%) entre o ano inicial e final do filtro.")
         )
       ),
       fluidRow(
         box(
-          title = "Dispersao volume x R$/litro por UF (decisao por mercado e embalagem)",
+          title = "Dispersão volume x R$/litro por UF (decisao por mercado e embalagem)",
           width = 12,
           plotlyOutput("scatter_uf", height = "430px"),
           uiOutput("nota_scatter")
@@ -141,7 +141,7 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Evolucao do preco por litro por embalagem (R$/L) e variacao percentual (Δ%)",
+          title = "Evolução do preço por litro por embalagem (R$/L) e variação percentual (Δ%)",
           width = 12,
           plotlyOutput("plot_preco_emb_ano", height = "300px"),
           uiOutput("nota_preco_emb_ano")
@@ -164,7 +164,7 @@ body <- dashboardBody(
               choices = c(
                 "Volume (Bi L)" = "litros",
                 "Valor (R$ Bi)" = "valor",
-                "Preco medio (R$/L)" = "preco"
+                "Preço médio (R$/L)" = "preco"
               ),
               selected = "litros",
               inline = TRUE
@@ -180,7 +180,7 @@ body <- dashboardBody(
           uiOutput("nota_mapa")
         ),
         box(
-          title = "Ranking das 10 maiores UFs e concentracao acumulada",
+          title = "Ranking das 10 maiores UFs e concentração acumulada",
           width = 6,
           plotOutput("plot_top10_uf", height = "500px"),
           uiOutput("nota_top10_uf")

@@ -22,8 +22,8 @@ library(sf)
 
 # ---------- Constantes ----------
 emb_cols_all <- c(
-  "Garrafao" = "garrafao_l",
-  "Garrafa Plastica" = "plastica_l",
+  "Garrafão" = "garrafao_l",
+  "Garrafa Plástica" = "plastica_l",
   "Garrafa de Vidro" = "vidro_l",
   "Copo" = "copo_l",
   "Outros" = "outras_l",
@@ -34,7 +34,7 @@ cols_l <- c("garrafao_l", "plastica_l", "vidro_l", "copo_l", "outras_l", "comp_i
 cols_v <- c("garrafao_v", "plastica_v", "vidro_v", "copo_v", "outras_v", "comp_ind_v")
 
 emb_meta <- tibble(
-  rotulo = c("Garrafao", "Garrafa plastica", "Garrafa de vidro", "Copo", "Outros"),
+  rotulo = c("Garrafão", "Garrafa plástica", "Garrafa de vidro", "Copo", "Outros"),
   col_l  = c("garrafao_l", "plastica_l", "vidro_l", "copo_l", "outras_l"),
   col_v  = c("garrafao_v", "plastica_v", "vidro_v", "copo_v", "outras_v")
 )
@@ -170,4 +170,3 @@ para_plotly <- function(p) {
     layout(showlegend = FALSE, hoverlabel = list(align = "left")) |>
     config(displaylogo = FALSE, modeBarButtonsToRemove = c("select2d", "lasso2d", "autoScale2d"))
 }
-

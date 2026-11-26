@@ -11,7 +11,7 @@ server <- function(input, output, session) {
     ano_min <- as.integer(min(agua_clean$ano, na.rm = TRUE))
     ano_max <- as.integer(max(agua_clean$ano, na.rm = TRUE))
     sliderInput(
-      "anos", "Periodo (Ano base)",
+      "anos", "Período (Ano base)",
       min = ano_min, max = ano_max,
       value = c(ano_min, ano_max),
       step = 1L, round = TRUE, sep = ""
@@ -19,7 +19,7 @@ server <- function(input, output, session) {
   })
 
   output$ui_regiao <- renderUI({
-    selectInput("regiao", "Regiao",
+    selectInput("regiao", "Região",
                 choices = c("Todas", sort(unique(na.omit(agua_clean$regiao)))),
                 selected = "Todas")
   })
@@ -126,17 +126,17 @@ server <- function(input, output, session) {
       kpi_item(paste0("Volume ", ano_ref), fmt_bi_l(vol_ref), det_vol),
       kpi_item(paste0("Valor ", ano_ref), fmt_bi_brl(val_ref), det_val),
       kpi_item(
-        paste0("Preco medio ", ano_ref),
+        paste0("Preço médio ", ano_ref),
         if (is.na(preco_ref)) "N/D" else paste0("R$ ", fmt_num(preco_ref), " / L"),
         det_preco
       ),
       kpi_item(
-        paste0("UF lider (", ano_ref, ")"),
+        paste0("UF líder (", ano_ref, ")"),
         uf_top,
         if (!is.na(uf_pct)) paste0(fmt_pct(uf_pct), " do volume") else ""
       ),
       kpi_item(
-        paste0("Embalagem lider (", ano_ref, ")"),
+        paste0("Embalagem líder (", ano_ref, ")"),
         emb_top,
         if (!is.na(emb_pct)) paste0(fmt_pct(emb_pct), " do volume") else ""
       )
@@ -165,7 +165,7 @@ server <- function(input, output, session) {
     d_val <- if (s$val[1] > 0) (s$val[nrow(s)] / s$val[1]) - 1 else NA_real_
     txt_var <- if (!is.na(d_vol) && !is.na(d_val)) {
       paste0(
-        "Variacao ", ano_fim, " vs ", ano_ini, ": Valor ",
+        "Variação ", ano_fim, " vs ", ano_ini, ": Valor ",
         if (d_val >= 0) "+" else "", fmt_pct(d_val, 0.1),
         " vs Volume ", if (d_vol >= 0) "+" else "", fmt_pct(d_vol, 0.1), ". "
       )
@@ -181,7 +181,7 @@ server <- function(input, output, session) {
 
   output$plot_vol_val_tempo <- renderPlotly({
     s <- serie_ano()
-    validate(need(nrow(s) >= 2, "Selecione pelo menos 2 anos para ver a evolucao temporal."))
+    validate(need(nrow(s) >= 2, "Selecione pelo menos 2 anos para ver a evolução temporal."))
 
     long <- s |>
       select(ano, vol_bi, val_bi, preco) |>
@@ -191,7 +191,7 @@ server <- function(input, output, session) {
         tip = paste0(
           serie_lbl, " em ", ano, ": ",
           if_else(serie == "val_bi", paste0("R$ ", fmt_num(valor_bi), " Bi"), paste0(fmt_num(valor_bi), " Bi L")),
-          "<br>Preco medio: R$ ", fmt_num(preco), "/L"
+          "<br>Preço médio: R$ ", fmt_num(preco), "/L"
         )
       )
 
@@ -237,7 +237,7 @@ server <- function(input, output, session) {
         preco = val / vol,
         tip = paste0(
           UF, " (", regiao, ") - ", ano,
-          "<br>Preco medio bruto: R$ ", fmt_num(preco), "/L",
+          "<br>Preço médio bruto: R$ ", fmt_num(preco), "/L",
           "<br>Volume: ", fmt_num(vol / 1e9), " Bi L",
           "<br>Valor: R$ ", fmt_num(val / 1e9), " Bi"
         )
@@ -248,8 +248,8 @@ server <- function(input, output, session) {
     d <- dados_dotplot_bruto()
     req(nrow(d) > 0)
     div(class = "nota", paste0(
-      "Cada ponto cinza e uma UF em um ano; a linha e o preco medio ponderado do recorte. ",
-      "Todas as embalagens somadas (o filtro de embalagem nao se aplica). ",
+      "Cada ponto cinza é uma UF em um ano; a linha é o preço médio ponderado do recorte. ",
+      "Todas as embalagens somadas (o filtro de embalagem não se aplica). ",
       "Faixa observada: R$ ", fmt_num(min(d$preco)), "/L a R$ ", fmt_num(max(d$preco)), "/L."
     ))
   })
@@ -261,7 +261,7 @@ server <- function(input, output, session) {
     media_ano <- d |>
       group_by(ano) |>
       summarise(preco = sum(val) / sum(vol), .groups = "drop") |>
-      mutate(tip = paste0("Media do recorte em ", ano, ": R$ ", fmt_num(preco), "/L"))
+      mutate(tip = paste0("Média do recorte em ", ano, ": R$ ", fmt_num(preco), "/L"))
     fim <- media_ano[nrow(media_ano), ]
 
     anos_marco <- intersect(c(2010L, 2015L, 2020L, 2025L), unique(as.integer(d$ano)))
@@ -272,7 +272,7 @@ server <- function(input, output, session) {
       geom_point(aes(text = tip), colour = "#94a3b8", alpha = 0.75, size = 2.3) +
       geom_line(data = media_ano, colour = cor_valor, linewidth = 1.2) +
       geom_point(data = media_ano, aes(text = tip), colour = cor_valor, size = 2.2) +
-      geom_text(data = fim, aes(label = paste0("Media R$ ", fmt_num(preco))),
+      geom_text(data = fim, aes(label = paste0("Média R$ ", fmt_num(preco))),
                 hjust = 0, nudge_x = 0.3, fontface = "bold", size = 3.4, colour = cor_valor) +
       scale_x_continuous(
         breaks = seq(min(d$ano), max(d$ano), by = 1L),
@@ -283,7 +283,7 @@ server <- function(input, output, session) {
         limits = c(0, y_max),
         labels = label_number(prefix = "R$ ", accuracy = 0.05, decimal.mark = ",")
       ) +
-      labs(x = NULL, y = "Preco medio bruto (R$/L)") +
+      labs(x = NULL, y = "Preço médio bruto (R$/L)") +
       tema_base() +
       theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -341,7 +341,7 @@ server <- function(input, output, session) {
       lapply(seq_len(nrow(r)), function(i) {
         preco_txt <- if (is.na(r$preco[i])) "N/D" else paste0("R$ ", fmt_num(r$preco[i]), " / L")
         delta_txt <- if (is.na(r$delta_pct[i])) {
-          "Variacao N/D"
+          "Variação N/D"
         } else {
           sinal <- if (r$delta_pct[i] >= 0) "+" else ""
           paste0("Δ ", sinal, fmt_pct(r$delta_pct[i], 0.1), " (", r$ano_ini[i], "–", r$ano_fim[i], ")")
@@ -351,7 +351,7 @@ server <- function(input, output, session) {
         div(
           class = "emb-kpi-card",
           div(class = "emb-kpi-nome", r$rotulo[i]),
-          div(class = "emb-kpi-preco", preco_txt),
+          div(class = "emb-kpi-preço", preco_txt),
           div(class = "emb-kpi-sub", style = paste0("color:", cor_delta, "; font-weight:600;"), delta_txt),
           div(class = "emb-kpi-sub", paste0("Vol: ", fmt_pct(r$pct_vol[i]), " | Val: ", fmt_pct(r$pct_val[i])))
         )
@@ -386,7 +386,7 @@ server <- function(input, output, session) {
       " | Maior volume: ", uf_maior_vol, " (", fmt_num(max(df$vol_bi)), " Bi L)",
       " | Maior R$/L: ", uf_caro, " (R$ ", fmt_num(max(df$preco)), "/L)",
       " | Menor R$/L: ", uf_barato, " (R$ ", fmt_num(min(df$preco)), "/L). ",
-      "Linhas tracejadas: volume mediano e preco medio ponderado. Nao muda com o filtro de UF."
+      "Linhas tracejadas: volume mediano e preço médio ponderado. Não muda com o filtro de UF."
     ))
   })
 
@@ -405,7 +405,7 @@ server <- function(input, output, session) {
           "<br>Embalagem: ", rotulo_emb(input$embalagem),
           "<br>Volume: ", fmt_num(vol_bi), " Bi L",
           "<br>Valor: R$ ", fmt_num(val / 1e9), " Bi",
-          "<br>Preco medio: R$ ", fmt_num(preco), "/L"
+          "<br>Preço médio: R$ ", fmt_num(preco), "/L"
         )
       )
 
@@ -426,7 +426,7 @@ server <- function(input, output, session) {
       scale_colour_manual(values = c("FALSE" = "#334155", "TRUE" = "#c0392b"), guide = "none") +
       scale_x_log10(labels = label_number(accuracy = 0.01, decimal.mark = ",")) +
       scale_y_continuous(labels = label_number(prefix = "R$ ", accuracy = 0.01, decimal.mark = ",")) +
-      labs(x = "Volume produzido (Bi L, escala log)", y = "Preco medio (R$/L)") +
+      labs(x = "Volume produzido (Bi L, escala log)", y = "Preço médio (R$/L)") +
       tema_base() +
       theme(panel.grid.major.x = element_line(colour = "#e8efed", linewidth = 0.3))
 
@@ -481,7 +481,7 @@ server <- function(input, output, session) {
         tip = paste0(
           rotulo, " (", ano, "): R$ ", fmt_num(preco), "/L",
           if_else(!is.na(delta_pct),
-                  paste0("<br>Variacao ", ano_ini, "–", ano_fim, ": ",
+                  paste0("<br>Variação ", ano_ini, "–", ano_fim, ": ",
                          if_else(delta_pct >= 0, "+", ""), fmt_pct(delta_pct, 0.1)),
                   "")
         )
@@ -501,7 +501,7 @@ server <- function(input, output, session) {
 
   output$plot_preco_emb_ano <- renderPlotly({
     serie <- serie_preco_emb()
-    validate(need(n_distinct(serie$ano) >= 2, "Selecione pelo menos 2 anos para ver a evolucao."))
+    validate(need(n_distinct(serie$ano) >= 2, "Selecione pelo menos 2 anos para ver a evolução."))
 
     ult <- serie |> group_by(rotulo_delta) |> filter(ano == max(ano)) |> ungroup()
     desloc <- 0.1 * max(serie$preco, na.rm = TRUE)
@@ -556,10 +556,10 @@ server <- function(input, output, session) {
       input$metrica_mapa,
       litros = "volume (Bi L)",
       valor  = "valor (R$ Bi)",
-      preco  = "preco medio (R$/L)"
+      preco  = "preço médio (R$/L)"
     )
     div(class = "nota", paste0(
-      "Ano: ", ano_mapa_sel(), " | Metrica: ", met_txt,
+      "Ano: ", ano_mapa_sel(), " | Métrica: ", met_txt,
       " | Embalagem: ", rotulo_emb(input$embalagem),
       ". Passe o mouse sobre a UF para detalhes."
     ))
@@ -594,7 +594,7 @@ server <- function(input, output, session) {
           paste0(UF, " (", regiao, ")",
                  "<br>Volume: ", fmt_num(vol_bi), " Bi L",
                  "<br>Valor: R$ ", fmt_num(val_bi), " Bi",
-                 "<br>Preco medio: R$ ", fmt_num(preco), "/L")
+                 "<br>Preço médio: R$ ", fmt_num(preco), "/L")
         )
       )
 
@@ -609,7 +609,7 @@ server <- function(input, output, session) {
       input$metrica_mapa,
       litros = list(nome = "Volume (Bi L)", lbl = label_number(accuracy = 0.1, decimal.mark = ",", suffix = " Bi L")),
       valor  = list(nome = "Valor (R$ Bi)",  lbl = label_number(accuracy = 0.1, decimal.mark = ",", prefix = "R$ ", suffix = " Bi")),
-      list(nome = "Preco (R$/L)", lbl = label_number(accuracy = 0.1, decimal.mark = ",", prefix = "R$ "))
+      list(nome = "Preço (R$/L)", lbl = label_number(accuracy = 0.1, decimal.mark = ",", prefix = "R$ "))
     )
 
     p <- ggplot() +
@@ -659,7 +659,7 @@ server <- function(input, output, session) {
       mutate(
         medida_b = medida / 1e9,
         UF_ord = factor(UF, levels = rev(UF)),
-        grupo_top = if_else(row_number() <= 5, "Top 5", "6o ao 10o"),
+        grupo_top = if_else(row_number() <= 5, "Top 5", "6º ao 10º"),
         rotulo_barra = paste0(
           if (usa_valor) paste0("R$ ", fmt_num(medida_b), " Bi") else paste0(fmt_num(medida_b), " Bi L"),
           " (", fmt_pct(part), " | acum. ", fmt_pct(part_acum), ")"
@@ -674,8 +674,8 @@ server <- function(input, output, session) {
     top5_txt <- if (nrow(d) >= 5) paste0("Top 5 = ", fmt_pct(d$part_acum[5]), " | ") else ""
     top10_txt <- paste0("Top ", nrow(d), " = ", fmt_pct(d$part_acum[nrow(d)]))
     div(class = "nota", paste0(
-      "Ano: ", ano_mapa_sel(), " | Ranking por ", base_txt, " | Concentracao acumulada: ", top5_txt, top10_txt,
-      ". Respeita regiao e embalagem; nao muda com o filtro de UF."
+      "Ano: ", ano_mapa_sel(), " | Ranking por ", base_txt, " | Concentração acumulada: ", top5_txt, top10_txt,
+      ". Respeita região e embalagem; não muda com o filtro de UF."
     ))
   })
 
@@ -694,7 +694,7 @@ server <- function(input, output, session) {
         fontface = "bold",
         colour = "#0f172a"
       ) +
-      scale_fill_manual(values = c("Top 5" = "#1c444d", "6o ao 10o" = "#8fb8b2"), guide = "none") +
+      scale_fill_manual(values = c("Top 5" = "#1c444d", "6º ao 10º" = "#8fb8b2"), guide = "none") +
       scale_x_continuous(expand = expansion(mult = c(0, 0.58))) +
       labs(x = NULL, y = NULL) +
       tema_base() +
