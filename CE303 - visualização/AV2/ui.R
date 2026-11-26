@@ -15,8 +15,10 @@ header <- dashboardHeader(
 sidebar <- dashboardSidebar(
   div(
     class = "sidebar-sobre",
+    tags$h4(class = "sidebar-titulo", "Produção e Comércio de Água Mineral no Brasil"),
     tags$div(class = "sidebar-autor", "Emily Yamagutti Watanabe"),
     tags$strong("Sobre"),
+    "Painel exploratório da produção comercializada de água mineral no Brasil (2010–2025), com base no Anuário Mineral Brasileiro (ANM). Os indicadores consideram água embalada (5 formatos) em valores nominais."
   ),
   sidebarMenu(
     id = "abas",
@@ -152,20 +154,19 @@ body <- dashboardBody(
     # ABA 1: Contexto Historico
     tabItem(
       tabName = "contexto",
-      div(class = "titulo-aba", tags$h3("Contexto Histórico: volume, valor e preço do litro (2010–2025)"), tags$p("O valor cresceu mais que o volume? Os indicadores e gráficos respeitam o período, a região e a UF escolhidos na barra lateral.")),
+      div(class = "titulo-aba", tags$h3("Contexto Histórico: volume, valor e preço do litro (2010–2025)")),
       fluidRow(column(width = 12, uiOutput("kpis_ui"))),
       fluidRow(
         box(
           title = "Produção ao longo do tempo: Volume (Bi L) x Valor (R$ Bi)",
-          width = 12,
-          plotlyOutput("plot_vol_val_tempo", height = "360px"),
+          width = 6,
+          plotlyOutput("plot_vol_val_tempo", height = "400px"),
           uiOutput("nota_vol_val_tempo")
-        )
-      ),
-      fluidRow(
+        ),
         box(
-          width = 12,
-          plotlyOutput("dotplot_preco_ano_uf", height = "430px"),
+          title = "Preço médio por litro (R$/L) por ano e por UF",
+          width = 6,
+          plotlyOutput("dotplot_preco_ano_uf", height = "400px"),
           uiOutput("nota_dotplot_preco_ano_uf")
         )
       )
@@ -174,16 +175,18 @@ body <- dashboardBody(
     # ABA 2: Embalagens
     tabItem(
       tabName = "embalagens",
+      div(class = "titulo-aba", tags$h3("Resumo do preço por litro por embalagem (R$/L)")),
       fluidRow(
         box(
-          title = "Resumo do preço por litro por embalagem (R$/L)",
+          title = "Variação de preço por embalagem",
           width = 12,
-          uiOutput("cards_preco_emb_ui"),
-          div(class = "nota", "Preço médio ponderado (Valor / Volume) e variação percentual (Δ%) entre o ano inicial e final do filtro.")
+          plotlyOutput("plot_preco_emb_ano", height = "250px"),
+          uiOutput("nota_preco_emb_ano")
         )
       ),
       fluidRow(
         box(
+          title = "Dispersão volume x R$/litro por UF",
           width = 6,
           plotlyOutput("scatter_uf", height = "430px"),
           uiOutput("nota_scatter")
@@ -193,13 +196,6 @@ body <- dashboardBody(
           width = 6,
           plotlyOutput("violin_preco_emb", height = "430px"),
           uiOutput("nota_violin_preco_emb")
-        )
-      ),
-      fluidRow(
-        box(
-          width = 12,
-          plotlyOutput("plot_preco_emb_ano", height = "300px"),
-          uiOutput("nota_preco_emb_ano")
         )
       )
     ),

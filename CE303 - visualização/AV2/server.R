@@ -459,10 +459,10 @@ server <- function(input, output, session) {
     d <- dados_dist_emb()
     validate(need(nrow(d) > 0, "Sem dados para o recorte selecionado."))
     p <- ggplot(d, aes(x = rotulo, y = preco)) +
-      geom_violin(fill = "#d8efe9", colour = "#8fb8b2", scale = "width", trim = TRUE, width = 0.95) +
-      geom_boxplot(width = 0.28, outlier.shape = NA, fill = "#ffffff", colour = cor_valor, linewidth = 0.7) +
+      geom_violin(fill = "#d8efe9", colour = "#8fb8b2", alpha = 0.4, scale = "width", trim = TRUE, width = 0.95) +
       geom_point(aes(text = hover), colour = cor_valor, alpha = 0.7, size = 1.7,
                  position = position_jitter(width = 0.05, height = 0, seed = 1)) +
+      geom_boxplot(width = 0.28, outlier.shape = NA, fill = "#ffffff", colour = cor_valor, linewidth = 0.7) +
       scale_y_log10(labels = label_number(prefix = "R$ ", accuracy = 0.01, decimal.mark = ",")) +
       labs(x = NULL, y = "Preço médio por UF (R$/L, escala log)") +
       tema_base() +
