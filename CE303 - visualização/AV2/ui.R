@@ -15,10 +15,8 @@ header <- dashboardHeader(
 sidebar <- dashboardSidebar(
   div(
     class = "sidebar-sobre",
-    tags$h4(class = "sidebar-titulo", "Produção e comércio de água mineral no Brasil"),
     tags$div(class = "sidebar-autor", "Emily Yamagutti Watanabe"),
     tags$strong("Sobre"),
-    "Painel da produção do período de 2010–2025 do comércio de água mineral em diferentes embalagens no Brasil. Exploração da evolução de volume e faturamento, as diferenças de preço (R$/L) entre estados e por tipo de embalagem."
   ),
   sidebarMenu(
     id = "abas",
@@ -166,7 +164,6 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Preço médio por litro (R$/L) por ano e por UF",
           width = 12,
           plotlyOutput("dotplot_preco_ano_uf", height = "430px"),
           uiOutput("nota_dotplot_preco_ano_uf")
@@ -187,15 +184,19 @@ body <- dashboardBody(
       ),
       fluidRow(
         box(
-          title = "Dispersão volume x R$/litro por UF",
-          width = 12,
+          width = 6,
           plotlyOutput("scatter_uf", height = "430px"),
           uiOutput("nota_scatter")
+        ),
+        box(
+          title = "Distribuição do R$/L entre UFs por embalagem (violino e boxplot)",
+          width = 6,
+          plotlyOutput("violin_preco_emb", height = "430px"),
+          uiOutput("nota_violin_preco_emb")
         )
       ),
       fluidRow(
         box(
-          title = "Evolução do preço por litro por embalagem (R$/L) e variação percentual (%)",
           width = 12,
           plotlyOutput("plot_preco_emb_ano", height = "300px"),
           uiOutput("nota_preco_emb_ano")

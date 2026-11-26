@@ -426,6 +426,57 @@ server <- function(input, output, session) {
     para_plotly(p)
   })
 
+  # Distribuicao do R$/L entre UFs por embalagem (violino + boxplot + pontos), mesmo periodo e regiao
+  dados_dist_emb <- reactive({
+    req(input$anos, input$regiao)
+    base <- agua_clean |>
+      filter(
+        ano >= as.integer(input$anos[1]), ano <= as.integer(input$anos[2]),
+        input$regiao == "Todas" | regiao == input$regiao
+      ) |>
+      prepara_base("todas")
+    bind_rows(lapply(seq_len(nrow(emb_meta)), function(i) {
+      base |>
+        group_by(UF) |>
+        summarise(
+          vol = sum(.data[[emb_meta$col_l[i]]], na.rm = TRUE),
+          val = sum(.data[[emb_meta$col_v[i]]], na.rm = TRUE),
+          .groups = "drop"
+        ) |>
+        filter(vol > 0, val > 0) |>
+        mutate(rotulo = emb_meta$rotulo[i], preco = val / vol)
+    })) |>
+      group_by(rotulo) |>
+      filter(n() >= 3) |>
+      ungroup() |>
+      mutate(
+        rotulo = factor(rotulo, levels = emb_meta$rotulo),
+        hover = paste0(UF, " | ", rotulo, "<br>R$ ", fmt_num(preco), "/L<br>Volume: ", fmt_num(vol / 1e9), " Bi L")
+      )
+  })
+
+  output$violin_preco_emb <- renderPlotly({
+    d <- dados_dist_emb()
+    validate(need(nrow(d) > 0, "Sem dados para o recorte selecionado."))
+    p <- ggplot(d, aes(x = rotulo, y = preco)) +
+      geom_violin(fill = "#d8efe9", colour = "#8fb8b2", scale = "width", trim = TRUE, width = 0.95) +
+      geom_boxplot(width = 0.28, outlier.shape = NA, fill = "#ffffff", colour = cor_valor, linewidth = 0.7) +
+      geom_point(aes(text = hover), colour = cor_valor, alpha = 0.7, size = 1.7,
+                 position = position_jitter(width = 0.05, height = 0, seed = 1)) +
+      scale_y_log10(labels = label_number(prefix = "R$ ", accuracy = 0.01, decimal.mark = ",")) +
+      labs(x = NULL, y = "Preço médio por UF (R$/L, escala log)") +
+      tema_base() +
+      theme(panel.grid.major.x = element_blank())
+    para_plotly(p)
+  })
+
+  output$nota_violin_preco_emb <- renderUI({
+    div(class = "nota", paste0(
+      "Cada ponto é uma UF. O boxplot (na frente) mostra mediana e quartis; o violino, ao fundo, mostra onde os preços se concentram. ",
+      "Violino largo e baixo = preços parecidos entre UFs; esticado = preços muito diferentes."
+    ))
+  })
+
   # Mesmo criterio de variacao dos cartoes: preco no primeiro e no ultimo ano do periodo
   serie_preco_emb <- reactive({
     df <- prepara_base(dados_filtrados(), "todas")
